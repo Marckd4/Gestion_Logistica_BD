@@ -1,5 +1,5 @@
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from bodegabsf.forms import BsfForm
@@ -12,6 +12,13 @@ def data(request):
 # area formulario 
 
 def formulario(request):
-    form = BsfForm()
-    
+    if request.method == 'POST':
+        form = BsfForm(request.POST)
+        if form.is_valid():
+             form.save()
+             return HttpResponseRedirect('/bodegabsf')
+    else:
+        form = BsfForm()
+        
+        
     return render( request, 'bsf_form.html',{'form': form})

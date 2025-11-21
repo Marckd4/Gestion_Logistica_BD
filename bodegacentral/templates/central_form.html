@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<form action=" {% url 'formulariocentral' %}"method="post">
+<form novalidete action=" {% url 'formulariocentral' %}"method="post">
     {% csrf_token %}
     {{ form}}
     <input type="submit" value="Enviar">

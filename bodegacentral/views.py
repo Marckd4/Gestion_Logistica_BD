@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 
 from bodegacentral.forms import CentralForm
@@ -12,6 +12,13 @@ def index(request):
 # area formulario 
 
 def formulario(request):
-    form = CentralForm()
+    if request.method == 'POST':
+        form = CentralForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect('/bodegacentral')
+    else:
+        form = CentralForm()
+            
     
     return render( request, 'central_form.html',{'form': form})
