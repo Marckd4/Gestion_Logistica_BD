@@ -9,9 +9,36 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+
+    <!-- formato de tabla -->
+
+    <style>
+
+    .table-scroll {
+        height: 600px;          /* alto visible */
+        overflow-y: auto;       /* scroll vertical */
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background: white;      /* fondo para que no se mezcle con las filas al hacer scroll */
+        z-index: 10;
+    }
+
+    .table thead th {
+    background: #f8f8f8;
+    font-weight: bold;
+    }
+
+    </style>
+
+
 </head>
 
 <body>
+
+
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">Logistica_General </a>
