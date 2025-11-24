@@ -5,11 +5,9 @@
 
 <form novalidate action="{% url 'formulariocentral' %}" method="post">
     {% csrf_token %}
-
-    <div class="mb-3">
-        {{ form }}
-        <input type="submit" value="Enviar">
-    </div>
+    {{ form }}
+    <input type="submit" value="Enviar">
+   
 
 </form>
 
