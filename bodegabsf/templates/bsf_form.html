@@ -2,6 +2,8 @@
 
 {% block content %}
 
+<br>
+
 <form novalidate action="{% url 'formulario' %}" method="post">
     {% csrf_token %}
     {{ form }}

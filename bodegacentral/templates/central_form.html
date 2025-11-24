@@ -3,6 +3,8 @@
 
 {% block content %}
 
+<br>
+
 <form novalidate action="{% url 'formulariocentral' %}" method="post">
     {% csrf_token %}
     {{ form }}

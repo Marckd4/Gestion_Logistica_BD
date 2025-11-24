@@ -24,4 +24,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('bodegacentral/', include('bodegacentral.urls')),
     path('bodegabsf/', include('bodegabsf.urls')),
+    path('resumen/', views.resumen_unificado, name='resumen_unificado'), # resumen de ambas bodegas
 ]

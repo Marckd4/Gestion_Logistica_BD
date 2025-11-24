@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<br>
+
+<div class="table-scroll">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cod DUN</th>
+            <th>Cod EAN</th>
+            <th>Cod Sistema</th>
+            <th>Descripción</th>
+            <th>Cajas Bsf</th>
+            <th>Cajas Central</th>
+            <th>Stock Bsf</th>
+            <th>Stock Central</th>
+            <th>Diferencia</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for item in resumen %}
+        <tr>
+            <td>{{ item.cod_dun }}</td>
+            <td>{{ item.cod_ean }}</td>
+            <td>{{ item.cod_sistema }}</td>
+            <td>{{ item.descripcion }}</td>
+            <td>{{ item.cajas_bsf }}</td>
+            <td>{{ item.cajas_central }}</td>
+            <td>{{ item.stock_bsf }}</td>
+            <td>{{ item.stock_central }}</td>
+            <td>{{ item.diferencia_stock }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% endblock %}

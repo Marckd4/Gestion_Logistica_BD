@@ -3,13 +3,13 @@
 
 {% block content %}
 
+<br>
 
-
-
-<h1>Logística Bodega Lingues</h1>
+<!-- BUSCADOR -->
+<input id="searchInput" type="text" class="form-control mb-3" placeholder="Buscar...">
 
 <div class="table-scroll">
-  <table class="table">
+  <table id="dataTable" class="table table-striped table-hover table-bordered">
     <thead>
       <tr>
         <th>Categoria</th>
@@ -63,5 +63,94 @@
   </table>
 </div>
 
+<!-- PAGINACIÓN FUERA DE LA TABLA -->
+<div id="pagination" class="mt-3 d-flex gap-2 justify-content-center"></div>
+
+<script>
+// =======================
+// CONFIGURACIÓN
+// =======================
+const rowsPerPage = 10;
+let currentPage = 1;
+
+// =======================
+// ELEMENTOS
+// =======================
+const searchInput = document.getElementById("searchInput");
+const table = document.getElementById("dataTable");
+const rows = Array.from(table.getElementsByTagName("tbody")[0].rows);
+const paginationContainer = document.getElementById("pagination");
+
+// =======================
+// FILTRAR FILAS
+// =======================
+function filterRows() {
+    const text = searchInput.value.toLowerCase();
+    const filtered = rows.filter(row =>
+        row.innerText.toLowerCase().includes(text)
+    );
+
+    currentPage = 1;
+    displayPage(filtered);
+    setupPagination(filtered);
+}
+
+// =======================
+// MOSTRAR FILAS DE LA PÁGINA
+// =======================
+function displayPage(filteredRows) {
+    rows.forEach(row => row.style.display = "none");
+
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    filteredRows.slice(start, end).forEach(row => {
+        row.style.display = "";
+    });
+}
+
+// =======================
+// PAGINACIÓN
+// =======================
+function setupPagination(filteredRows) {
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+
+    paginationContainer.innerHTML = `
+        <button class="btn btn-primary btn-sm" id="prevBtn" ${currentPage===1?'disabled':''}>Anterior</button>
+        <span class="p-2">Página ${currentPage} de ${totalPages}</span>
+        <button class="btn btn-primary btn-sm" id="nextBtn" ${currentPage===totalPages?'disabled':''}>Siguiente</button>
+    `;
+
+    document.getElementById("prevBtn").onclick = () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayPage(filteredRows);
+            setupPagination(filteredRows);
+        }
+    };
+
+    document.getElementById("nextBtn").onclick = () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayPage(filteredRows);
+            setupPagination(filteredRows);
+        }
+    };
+}
+
+// =======================
+// EVENTO DE BÚSQUEDA
+// =======================
+searchInput.addEventListener("keyup", filterRows);
+
+// =======================
+// MOSTRAR TODO AL INICIO
+// =======================
+displayPage(rows);
+setupPagination(rows);
+</script>
+
 
 {% endblock %}
+
+

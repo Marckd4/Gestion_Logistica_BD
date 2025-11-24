@@ -38,38 +38,56 @@
 
 <body>
 
+      <!-- Navegador -->
 
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Logistica_General </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNavDropdown">
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="{% url 'inicio'%}">Inicio</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'data'%}">Bodega_BSF</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'index' %}">Bodega_Lingues</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Dropdown link
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-            <li><a class="dropdown-item" href="#">Something else here</a></li>
-          </ul>
-        </li>
-      </ul>
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{% url 'inicio'%}">Logistica_General </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNavDropdown">
+        <ul class="navbar-nav">
+        
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="/" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Bodega Lingues 
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'index' %}">Inventario_Lingues </a></li>
+              <li><a class="dropdown-item" href="{% url 'formulariocentral' %}">Ingreso de Mercaderia</a></li>
+              <li><a class="dropdown-item" href="#">Exportar Excel</a></li>
+              
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="/" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Bodega BSF
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'data'%}">Inventario_BSF</a></li>
+              <li><a class="dropdown-item" href="{% url 'formulario' %}"> Ingreso de Mercaderia</a></li>
+              <li><a class="dropdown-item" href="#">Exportar Excel</a></li>
+              
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Reporte
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'resumen_unificado' %}">Resumen General</a></li>
+              
+            </ul>
+          </li>
+          
+
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
+
+  
     {% block content %}
 
 
