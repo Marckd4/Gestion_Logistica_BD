@@ -32,6 +32,10 @@
                 <th>Contenedor</th>
                 <th>Fecha_Inv</th>
                 <th>Encargado</th>
+
+                <!-- 🔵 NUEVAS COLUMNAS -->
+                <th>Editar</th>
+                <th>Eliminar</th>
             </tr>
         </thead>
 
@@ -57,6 +61,20 @@
                 <td>{{ bsfs.contenedor }}</td>
                 <td>{{ bsfs.fecha_inv }}</td>
                 <td>{{ bsfs.encargado }}</td>
+
+                <!-- 🔵 NUEVA COLUMNA: EDITAR -->
+                <td>
+                    <a href="{% url 'editar_bsf' bsfs.id %}" class="btn btn-warning btn-sm">Editar</a>
+                </td>
+
+                <!-- 🔴 NUEVA COLUMNA: ELIMINAR -->
+                <td>
+                    <a href="{% url 'eliminar_bsf' bsfs.id %}" 
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('¿Seguro que deseas eliminar este registro?')">
+                       Eliminar
+                    </a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

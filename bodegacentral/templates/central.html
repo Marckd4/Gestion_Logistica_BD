@@ -1,6 +1,5 @@
 {% extends 'base.html'%}
 
-
 {% block content %}
 
 <br>
@@ -31,6 +30,10 @@
         <th>Contenedor</th>
         <th>Fecha_Inv</th>
         <th>Encargado</th>
+
+        <!-- 🔵 NUEVAS COLUMNAS -->
+        <th>Editar</th>
+        <th>Eliminar</th>
       </tr>
     </thead>
 
@@ -56,6 +59,20 @@
         <td>{{ central.contenedor }}</td>
         <td>{{ central.fecha_inv }}</td>
         <td>{{ central.encargado }}</td>
+
+        <!-- 🔵 COLUMNA EDITAR -->
+        <td>
+          <a href="{% url 'editar_central' central.id %}" class="btn btn-warning btn-sm">Editar</a>
+        </td>
+
+        <!-- 🔴 COLUMNA ELIMINAR -->
+        <td>
+          <a href="{% url 'eliminar_central' central.id %}"
+             class="btn btn-danger btn-sm"
+             onclick="return confirm('¿Seguro que deseas eliminar este registro?')">
+             Eliminar
+          </a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -150,7 +167,4 @@ displayPage(rows);
 setupPagination(rows);
 </script>
 
-
 {% endblock %}
-
-

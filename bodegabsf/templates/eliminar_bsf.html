@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Eliminar registro</h3>
+    <p>¿Seguro que deseas eliminar el producto <strong>{{ bsf.descripcion }}</strong>?</p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a href="{% url 'data' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

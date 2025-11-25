@@ -78,7 +78,40 @@ def exportar_excel(request):
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    response["Content-Disposition"] = 'attachment; filename=\"inventario_bodegaBSF.xlsx\"'
+    response["Content-Disposition"] = 'attachment; filename=\"inventario_bodega_BSF.xlsx\"'
 
     wb.save(response)
     return response
+
+
+# eliminar y editar tabla 
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Bsf
+from .forms import BsfForm
+
+# ---------- EDITAR ----------
+def editar_bsf(request, id):
+    bsf = get_object_or_404(Bsf, id=id)
+
+    if request.method == "POST":
+        form = BsfForm(request.POST, instance=bsf)
+        if form.is_valid():
+            form.save()
+            return redirect('data')  # ← Ajusta al nombre de tu vista principal
+    else:
+        form = BsfForm(instance=bsf)
+
+    return render(request, 'editar_bsf.html', {'form': form, 'bsf': bsf})
+
+
+# ---------- ELIMINAR ----------
+def eliminar_bsf(request, id):
+    bsf = get_object_or_404(Bsf, id=id)
+
+    if request.method == "POST":
+        bsf.delete()
+        return redirect('data')   # ← Ajusta al nombre de tu vista principal
+
+    return render(request, 'eliminar_bsf.html', {'bsf': bsf})

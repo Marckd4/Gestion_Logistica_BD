@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h3>Editar Registro (ID: {{ central.id }})</h3>
+    <hr>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a href="{% url 'index' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+
+</div>
+
+{% endblock %}

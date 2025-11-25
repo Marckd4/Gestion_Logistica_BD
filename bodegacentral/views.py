@@ -84,3 +84,36 @@ def exportar_excel(request):
 
     wb.save(response)
     return response
+
+
+
+#eliminar - editar
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Central
+from .forms import CentralForm
+
+# -------- EDITAR CENTRAL --------
+def editar_central(request, id):
+    central = get_object_or_404(Central, id=id)
+
+    if request.method == "POST":
+        form = CentralForm(request.POST, instance=central)
+        if form.is_valid():
+            form.save()
+            return redirect('index')   # ← ajusta al nombre de tu vista principal
+    else:
+        form = CentralForm(instance=central)
+
+    return render(request, 'editar_central.html', {'form': form, 'central': central})
+
+
+# -------- ELIMINAR CENTRAL --------
+def eliminar_central(request, id):
+    central = get_object_or_404(Central, id=id)
+
+    if request.method == "POST":
+        central.delete()
+        return redirect('index')   # ← ajusta al nombre real de tu URL
+
+    return render(request, 'eliminar_central.html', {'central': central})
