@@ -4,8 +4,11 @@
 
 <br>
 
+<!-- CAMPO DE BÚSQUEDA -->
+<input id="searchInput" type="text" class="form-control mb-3" placeholder="Buscar...">
+
 <div class="table-scroll">
-<table class="table">
+<table id="dataTable" class="table table-striped table-hover table-bordered">
     <thead>
         <tr>
             <th>Cod DUN</th>
@@ -37,5 +40,33 @@
     </tbody>
 </table>
 </div>
+
+<!-- SCRIPT DEL FILTRO -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("searchInput");
+    const table = document.getElementById("dataTable");
+    const rows = table.getElementsByTagName("tr");
+
+    input.addEventListener("keyup", function () {
+        const filter = input.value.toLowerCase();
+
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName("td");
+            let found = false;
+
+            for (let j = 0; j < cells.length; j++) {
+                const text = cells[j].textContent.toLowerCase();
+                if (text.indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+
+            rows[i].style.display = found ? "" : "none";
+        }
+    });
+});
+</script>
 
 {% endblock %}
