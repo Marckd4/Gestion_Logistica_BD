@@ -1,16 +1,32 @@
 {% extends 'base.html' %}
 
-
 {% block content %}
 
-<br>
+<div class="container mt-4">
 
-<form novalidate action="{% url 'formulariocentral' %}" method="post">
-    {% csrf_token %}
-    {{ form }}
-    <input type="submit" value="Enviar">
-   
+    <h3 class="mb-4 text-center">Ingreso de Mercaderia Lingues</h3>
 
-</form>
+    <form novalidate action="{% url 'formulariocentral' %}" method="post" class="p-4 shadow rounded bg-light">
+        {% csrf_token %}
+
+        <!-- Renderiza cada campo con control Bootstrap -->
+        {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                
+                <!-- Mostrar errores por campo -->
+                {% if field.errors %}
+                    <div class="text-danger small">
+                        {{ field.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary w-100">Enviar</button>
+    </form>
+
+</div>
 
 {% endblock %}
