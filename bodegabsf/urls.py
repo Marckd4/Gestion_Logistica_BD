@@ -12,5 +12,6 @@ urlpatterns = [
     path('editar/<int:id>/', views.editar_bsf, name='editar_bsf'),
     path('eliminar/<int:id>/', views.eliminar_bsf, name='eliminar_bsf'),
     
+    
    
 ]

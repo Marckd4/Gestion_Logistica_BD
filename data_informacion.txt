@@ -18,3 +18,9 @@ git config core.autocrlf true
 
 
  pip install openpyxl
+
+
+ 
+django-admin startproject 
+cd 
+python manage.py startapp 

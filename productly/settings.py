@@ -49,7 +49,12 @@ INSTALLED_APPS = [
     'bodegabsf.apps.BodegabsfConfig', # app bodegabsf
     'bodegacentral.apps.BodegacentralConfig', # app bodegacentral
     'django.forms',
+    'usuario.apps.UsuarioConfig',
+   
+   
 ]
+
+    
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

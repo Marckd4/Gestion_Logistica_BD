@@ -26,4 +26,6 @@ urlpatterns = [
     path('bodegabsf/', include('bodegabsf.urls')),
     path('resumen/', views.resumen_unificado, name='resumen_unificado'), # resumen de ambas bodegas
     path("exportar-resumen-excel/", views.exportar_resumen_excel, name="exportar_resumen_excel"), # exportar excel resumen 
+    path('usuario/', include('usuario.urls')),
+   
 ]
