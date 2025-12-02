@@ -185,35 +185,54 @@
         </li>
 
         <!-- ADMIN -->
-        <li class="nav-item mt-2">
-            <a class="nav-link" data-bs-toggle="collapse" href="#adminMenu">
-                <i class="bi bi-gear"></i> Administración
-            </a>
-            <div class="collapse" id="adminMenu">
-                <ul class="nav flex-column ms-4">
-                    <li><a class="nav-link" href="{% url 'crear_usuario' %}">
-                        <i class="bi bi-person-plus"></i> Crear Usuario
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'dashboard' %}">
-                        <i class="bi bi-speedometer"></i> Dashboard
-                    </a></li>
-                </ul>
-            </div>
-        </li>
+<li class="nav-item mt-2">
 
-        <!-- CERRAR SESIÓN -->
-        <li class="nav-item mt-4">
-            <form method="POST" action="{% url 'logout' %}" class="d-flex justify-content-center">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger w-75 d-flex align-items-center justify-content-center gap-2"
-                    style="font-weight: 600; border-radius: 12px;">
-                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-                </button>
-            </form>
-        </li>
+    <a class="nav-link" data-bs-toggle="collapse" href="#adminMenu">
+        <i class="bi bi-gear"></i> Administración
+    </a>
 
-    </ul>
+    <div class="collapse" id="adminMenu">
+        <ul class="nav flex-column ms-4">
+            <li>
+                <a class="nav-link" href="{% url 'crear_usuario' %}">
+                    <i class="bi bi-person-plus"></i> Crear Usuario
+                </a>
+            </li>
+
+            <li>
+                <a class="nav-link" href="{% url 'dashboard' %}">
+                    <i class="bi bi-speedometer"></i> Dashboard
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+
+<!-- PANEL ADMIN SOLO PARA SUPERUSUARIOS -->
+{% if request.user.is_superuser %}
+<li class="nav-item mt-3 d-flex justify-content-center">
+    <a href="/admin/" class="btn btn-warning w-75 d-flex align-items-center justify-content-center gap-2"
+        style="font-weight: 600; border-radius: 12px;">
+        <i class="bi bi-gear-fill"></i> Panel Admin
+    </a>
+</li>
+{% endif %}
+
+<!-- CERRAR SESIÓN -->
+<li class="nav-item mt-3">
+    <form method="POST" action="{% url 'logout' %}" class="d-flex justify-content-center">
+        {% csrf_token %}
+        <button type="submit"
+            class="btn btn-danger w-75 d-flex align-items-center justify-content-center gap-2"
+            style="font-weight: 600; border-radius: 12px;">
+            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+        </button>
+    </form>
+</li>
+
+</ul>
 </div>
+
 
 
     
