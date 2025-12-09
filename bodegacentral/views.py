@@ -164,3 +164,14 @@ def buscar_producto(request):
     return JsonResponse({"resultados": resultados})
 
 
+
+# resumen de bodega inv 
+from django.shortcuts import render
+from .models import Central
+
+def resumen_central(request):
+    # Traemos solo los campos necesarios
+    datos = Central.objects.all().values(
+        'cod_dun', 'cod_ean', 'cod_sistema', 'descripcion', 'cajas', 'stock_fisico','ubicacion',
+    )
+    return render(request, 'resumen.html', {'datos': datos})

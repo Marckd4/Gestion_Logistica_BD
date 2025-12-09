@@ -161,5 +161,19 @@ def buscar_producto(request):
 
 
 
-# usuario
+# resumen de datos 
 
+from django.shortcuts import render
+from .models import Bsf
+
+def resumen_bsf(request):
+    datos = Bsf.objects.all().values(
+        "cod_dun",
+        "cod_ean",
+        "cod_sistema",
+        "descripcion",
+        "cajas",
+        "stock_fisico",
+        "ubicacion",
+    )
+    return render(request, "resumen_bsf.html", {"datos": list(datos)})

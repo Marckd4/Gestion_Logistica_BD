@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<body>
+
+<input type="text" id="filtro" class="form-control mb-3" placeholder="Filtrar..." onkeyup="filtrarTabla()">
+<button class="btn btn-success mb-3" onclick="exportExcel()">Exportar Excel</button>
+
+
+
+<table id="tablaCentral" class="table table-striped table-bordered">
+    
+        <tr>
+            <th>Cod DUN</th>
+            <th>Cod EAN</th>
+            <th>Cod Sistema</th>
+            <th>Descripción</th>
+            <th>Cajas</th>
+            <th>Stock Físico</th>
+            <th>Ubicación</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in datos %}
+        <tr>
+            <td>{{ item.cod_dun }}</td>
+            <td>{{ item.cod_ean }}</td>
+            <td>{{ item.cod_sistema }}</td>
+            <td>{{ item.descripcion }}</td>
+            <td>{{ item.cajas }}</td>
+            <td>{{ item.stock_fisico }}</td>
+            <td>{{ item.ubicacion }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+/* -------------------------------
+   FILTRO EN JS
+--------------------------------*/
+document.getElementById("filtro").addEventListener("keyup", function () {
+    let filtro = this.value.toLowerCase();
+    let filas = document.querySelectorAll("#tablaCentral tbody tr");
+
+    filas.forEach(fila => {
+        let texto = fila.textContent.toLowerCase();
+        fila.style.display = texto.includes(filtro) ? "" : "none";
+    });
+});
+
+/* -------------------------------
+   EXPORTAR A EXCEL
+--------------------------------*/
+function exportExcel() {
+    let tabla = document.getElementById("tablaCentral");
+    let wb = XLSX.utils.table_to_book(tabla, { sheet: "Resumen BSF" });
+    XLSX.writeFile(wb, "resumen_bsf.xlsx");
+}
+</script>
+
+</body>
+{% endblock %}
