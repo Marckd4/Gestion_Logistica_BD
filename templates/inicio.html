@@ -1,25 +1,58 @@
-{% extends 'base.html'%}
+{% extends 'base.html' %}
+{% load static %}
+
 {% block content %}
 
-    <style>
-        .bienvenida {
-            background-color: #f0f8ff;
-            border: 2px solid #00f;
-            padding: 20px;
-            text-align: center;
-            font-size: 24px;
-            border-radius: 10px;
-            margin: 20px;
+<style>
+    .bienvenida {
+        background-color: #f0f8ff;
+        border: 2px solid #00f;
+        padding: 20px;
+        text-align: center;
+        font-size: 24px;
+        border-radius: 10px;
+        margin: 20px;
+    }
+
+    .img-amplia {
+        width: 100%;  /* ocupa todo el contenedor */
+        max-width: 100%;
+        height: auto;
+        border-radius: 15px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
         }
-    </style>
 
-    <div class="bienvenida">
-        ¡Bienvenido Logistica ChileanTrading!
+
+</style>
+
+<div class="bienvenida">
+    ¡Bienvenido Logistica ChileanTrading!
+</div>
+
+<div id="carouselExampleControlsNoTouching" class="carousel slide" data-bs-ride="carousel" data-bs-touch="false">
+  <div class="carousel-inner">
+    <div class="carousel-item active">
+      <img src="{% static 'foto_empresa.png' %}" class="img-amplia" alt="...">
     </div>
-
     
+  </div>
+  <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControlsNoTouching" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControlsNoTouching" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
+  </button>
+</div>
 
-
-    
+<script>
+  // Inicia el carrusel automáticamente
+  var myCarousel = document.querySelector('#carouselExampleControlsNoTouching');
+  var carousel = new bootstrap.Carousel(myCarousel, {
+    interval: 1000,   // 3 segundos por imagen
+    wrap: true        // esto permite que vuelva al inicio automáticamente
+  });
+</script>
 
 {% endblock %}
