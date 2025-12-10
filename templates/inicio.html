@@ -15,12 +15,19 @@
     }
 
     .img-amplia {
-        width: 100%;  /* ocupa todo el contenedor */
-        max-width: 100%;
-        height: auto;
-        border-radius: 15px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.2);
-        }
+    position: fixed;      /* fija la imagen en la pantalla */
+    top: 50%;             /* centra verticalmente */
+    left: 50%;            /* centra horizontalmente */
+    transform: translate(-50%, -50%); /* ajusta el centro */
+    
+    width: 100%;           /* ocupa casi todo el ancho */
+    max-width: 100%;
+    height: auto;
+
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    z-index: -1;          /* queda detrás de la tarjeta de login */
+}
 
 
 </style>
@@ -32,7 +39,7 @@
 <div id="carouselExampleControlsNoTouching" class="carousel slide" data-bs-ride="carousel" data-bs-touch="false">
   <div class="carousel-inner">
     <div class="carousel-item active">
-      <img src="{% static 'foto_empresa.png' %}" class="img-amplia" alt="...">
+      <img src="{% static 'bsfjpg.jpg' %}" alt="Fondo Chilean Trading" class="img-amplia">
     </div>
     
   </div>

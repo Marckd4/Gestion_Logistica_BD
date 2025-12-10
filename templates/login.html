@@ -1,3 +1,5 @@
+
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,13 +11,21 @@
 
     <style>
         body {
-            background: linear-gradient(135deg, #0a3d62, #3c6382);
+            /* Imagen de fondo */
+            background: url("{% static 'bfs2.avif' %}") no-repeat center center fixed;
+            background-size: cover;
+
+            /* Degradado sobre la imagen para contraste */
+            background-blend-mode: overlay;
+            background-color: rgba(10, 61, 98, 0.6);
+
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             color: white;
         }
+
         .login-card {
             background: rgba(255,255,255,0.15);
             backdrop-filter: blur(12px);
@@ -23,13 +33,24 @@
             padding: 30px;
             width: 350px;
             border: 1px solid rgba(255,255,255,0.30);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
         }
+
         .login-card input {
             border-radius: 10px;
         }
+
         .login-card button {
             border-radius: 10px;
             font-weight: bold;
+        }
+
+        /* Opcional: responsive en móviles */
+        @media (max-width: 400px) {
+            .login-card {
+                width: 90%;
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -58,7 +79,6 @@
         </button>
     </form>
 
-    <!-- 🔥 Botón agregado sin modificar el resto -->
     <div class="text-center mt-3">
         <a href="{% url 'crear_usuario' %}" class="btn btn-outline-light w-100">
             Crear Usuario
@@ -68,7 +88,7 @@
     {% if messages %}
         <div class="alert alert-danger mt-3">
             {% for m in messages %}
-                {{ m }}
+                <p>{{ m }}</p>
             {% endfor %}
         </div>
     {% endif %}
@@ -77,4 +97,3 @@
 
 </body>
 </html>
-
