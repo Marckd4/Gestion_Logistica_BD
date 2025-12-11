@@ -3,103 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión Logística</title>
+    <title>{% block title %}Gestión Logística ChileanTrading{% endblock %}</title>
 
-    <!-- BOOTSTRAP -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- ÍCONOS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    
-
-    <style>
+<style>
     :root {
         --azul-metal: #0a3d62;
         --azul-metal-claro: #3c6382;
         --azul-hover: #82ccdd;
         --blanco: #ffffff;
     }
+    body { background: #f5f6fa; }
+    .logout-btn { border-radius: 12px; font-weight: 600; }
 
-    /* SIDEBAR ESTILO GLASS + METAL */
-    #sidebar {
-        width: 250px;
-        height: 100vh;
-        position: fixed;
-        top: 0;
-        left: 0;
-        backdrop-filter: blur(12px);
-        background: rgba(10, 61, 98, 0.70);
-        border-right: 2px solid rgba(255,255,255,0.25);
-        padding-top: 20px;
-        transition: transform 0.3s ease-in-out;
-        z-index: 1000;
-    }
-
-    @media (max-width: 991px) {
-        #sidebar {
-            transform: translateX(-260px);
-        }
-        #sidebar.open {
-            transform: translateX(0);
-        }
-    }
-
-    #sidebar .nav-link {
-        color: var(--blanco);
-        font-weight: 600;
-        border: 1px solid rgba(255,255,255,0.35);
-        border-radius: 12px;
-        margin: 6px 10px;
-        padding: 10px 14px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        transition: 0.25s ease;
-        background: rgba(255,255,255,0.05);
-    }
-
-    #sidebar .nav-link:hover {
-        background-color: var(--azul-hover);
-        color: var(--azul-metal) !important;
-        border-color: var(--azul-metal-claro);
-        transform: translateX(6px);
-        box-shadow: 0 0 8px rgba(255,255,255,0.4);
-    }
-
-    #menuToggle {
-        position: fixed;
-        top: 15px;
-        left: 15px;
-        z-index: 2000;
-        border-radius: 8px;
-        border: 2px solid var(--azul-metal);
-        color: var(--azul-metal);
-        background: rgba(255,255,255,0.6);
-        font-weight: bold;
-        backdrop-filter: blur(4px);
-        transition: 0.3s;
-    }
-
-    #menuToggle:hover {
-        background: var(--azul-metal);
-        color: white;
-    }
-
-    #content {
-        margin-left: 260px;
-        padding: 20px;
-        transition: margin-left 0.3s;
-    }
-
-    @media(max-width: 991px){
-        #content {
-            margin-left: 0;
-            margin-top: 60px;
-        }
-    }
-
-    .table-scroll {
+      .table-scroll {
         height: 600px;
         overflow-y: auto;
     }
@@ -111,162 +30,44 @@
         font-weight: bold;
         border-bottom: 2px solid var(--azul-metal);
     }
-    </style>
 
+
+  .btn-volver {
+    background: #0a3d62;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;   /* importante para alinearlo bien */
+}
+
+.btn-volver:hover {
+    background: #3c6382;
+}
+
+
+
+  
+</style>
 </head>
+
 <body>
 
-    <!-- SIDEBAR -->
-<div id="sidebar" class="text-white">
+<div class="container mt-4">
 
-    <h4 class="text-center mb-4">Logística</h4>
+    <h3 class="text-center fw-bold text-primary mb-4">
+        {% block header %}Gestión Logística ChileanTrading{% endblock %}
+    </h3>
 
-    <ul class="nav flex-column">
+    {% block content %}{% endblock %}
 
-        <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="{% url 'inicio' %}">
-                <i class="bi bi-house-door"></i> Inicio
-            </a>
-        </li>
+ 
 
-        <!-- LINGUES -->
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="collapse" href="#linguesMenu">
-                <i class="bi bi-box-seam"></i> Bodega Lingues
-            </a>
-            <div class="collapse" id="linguesMenu">
-                <ul class="nav flex-column ms-4">
-                    <li><a class="nav-link" href="{% url 'index' %}">
-                        <i class="bi bi-clipboard-data"></i> Inventario
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'formulariocentral' %}">
-                        <i class="bi bi-plus-circle"></i> Ingreso
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'exportar_excel_productos' %}">
-                        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'resumen_central' %}">
-                        <i class="bi bi-folder"></i> Resumen Bodega Lingues 
-                    </a></li>
-
-                </ul>
-            </div>
-        </li>
-
-        <!-- BSF -->
-        <li class="nav-item mt-2">
-            <a class="nav-link" data-bs-toggle="collapse" href="#bsfMenu">
-                <i class="bi bi-buildings"></i> Bodega BSF
-            </a>
-            <div class="collapse" id="bsfMenu">
-                <ul class="nav flex-column ms-4">
-                    <li><a class="nav-link" href="{% url 'data' %}">
-                        <i class="bi bi-clipboard-data"></i> Inventario
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'formulario' %}">
-                        <i class="bi bi-plus-circle"></i> Ingreso
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'exportar_excel' %}">
-                        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'resumen_bsf'%}">
-                        <i class="bi bi-folder"></i> Resumen Bodega BSF
-                    </a></li>
-                </ul>
-            </div>
-        </li>
-
-        <!-- REPORTES -->
-        <li class="nav-item mt-2">
-            <a class="nav-link" data-bs-toggle="collapse" href="#reporteMenuGeneral">
-                <i class="bi bi-bar-chart"></i> Reportes
-            </a>
-            <div class="collapse" id="reporteMenuGeneral">
-                <ul class="nav flex-column ms-4">
-                    <li><a class="nav-link" href="{% url 'resumen_unificado' %}">
-                        <i class="bi bi-graph-up"></i> Resumen General
-                    </a></li>
-                    <li><a class="nav-link" href="{% url 'exportar_resumen_excel' %}">
-                        <i class="bi bi-file-earmark-excel"></i> Exportar Resumen General
-                    </a></li>
-                </ul>
-            </div>
-        </li>
-
-        <!-- ADMIN -->
-<li class="nav-item mt-2">
-
-    <a class="nav-link" data-bs-toggle="collapse" href="#adminMenu">
-        <i class="bi bi-gear"></i> Administración
-    </a>
-
-    <div class="collapse" id="adminMenu">
-        <ul class="nav flex-column ms-4">
-            <li>
-                <a class="nav-link" href="{% url 'crear_usuario' %}">
-                    <i class="bi bi-person-plus"></i> Crear Usuario
-                </a>
-            </li>
-
-            <li>
-                <a class="nav-link" href="{% url 'dashboard' %}">
-                    <i class="bi bi-speedometer"></i> Dashboard
-                </a>
-            </li>
-        </ul>
-    </div>
-</li>
-
-<!-- PANEL ADMIN SOLO PARA SUPERUSUARIOS -->
-{% if request.user.is_superuser %}
-<li class="nav-item mt-3 d-flex justify-content-center">
-    <a href="/admin/" class="btn btn-warning w-75 d-flex align-items-center justify-content-center gap-2"
-        style="font-weight: 600; border-radius: 12px;">
-        <i class="bi bi-gear-fill"></i> Panel Admin
-    </a>
-</li>
-{% endif %}
-
-<!-- CERRAR SESIÓN -->
-<li class="nav-item mt-3">
-    <form method="POST" action="{% url 'logout' %}" class="d-flex justify-content-center">
-        {% csrf_token %}
-        <button type="submit"
-            class="btn btn-danger w-75 d-flex align-items-center justify-content-center gap-2"
-            style="font-weight: 600; border-radius: 12px;">
-            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-        </button>
-    </form>
-</li>
-
-</ul>
 </div>
 
-
-
-    
-
-    <!-- BOTÓN HAMBURGUESA -->
-    <button id="menuToggle" class="btn btn-outline-primary d-lg-none">
-        <i class="bi bi-list"></i> Menú
-    </button>
-
-    <!-- CONTENIDO -->
-    <div id="content">
-        {% block content %}{% endblock %}
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const sidebar = document.getElementById("sidebar");
-        const toggle = document.getElementById("menuToggle");
-
-        toggle.addEventListener("click", () => {
-            sidebar.classList.toggle("open");
-            // Mover botón suavemente junto al sidebar
-            toggle.style.left = sidebar.classList.contains("open") ? "260px" : "15px";
-        });
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
