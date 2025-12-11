@@ -15,10 +15,16 @@
         --azul-hover: #82ccdd;
         --blanco: #ffffff;
     }
-    body { background: #f5f6fa; }
-    .logout-btn { border-radius: 12px; font-weight: 600; }
 
-      .table-scroll {
+    body { background: #f5f6fa; }
+
+    .logout-btn { 
+        border-radius: 12px; 
+        font-weight: 600; 
+    }
+
+    /* TABLAS */
+    .table-scroll {
         height: 600px;
         overflow-y: auto;
     }
@@ -31,25 +37,69 @@
         border-bottom: 2px solid var(--azul-metal);
     }
 
+    /* BOTÓN VOLVER */
+    .btn-volver {
+        background: #0a3d62;
+        color: white;
+        padding: 6px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-block;
+    }
+    .btn-volver:hover {
+        background: #3c6382;
+    }
 
-  .btn-volver {
-    background: #0a3d62;
-    color: white;
-    padding: 6px 14px;
-    border-radius: 10px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: inline-block;   /* importante para alinearlo bien */
-}
+    /* 📱📱 --- RESPONSIVE --- 📱📱 */
 
-.btn-volver:hover {
-    background: #3c6382;
-}
+    /* Teléfonos muy pequeños (320px – 480px) */
+    @media (max-width: 480px) {
 
+        h3 {
+            font-size: 1.3rem;
+        }
 
+        .container {
+            padding-left: 8px;
+            padding-right: 8px;
+        }
 
-  
+        .btn-volver {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .table-scroll {
+            height: auto;
+            max-height: 350px;
+        }
+    }
+
+    /* Tablets y móviles grandes (481px – 768px) */
+    @media (max-width: 768px) {
+
+        .btn-volver {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .container {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+        }
+
+        .table-scroll {
+            height: auto;
+            max-height: 450px;
+        }
+    }
+
 </style>
 </head>
 
@@ -62,8 +112,6 @@
     </h3>
 
     {% block content %}{% endblock %}
-
- 
 
 </div>
 
