@@ -200,3 +200,13 @@ CSRF_COOKIE_SECURE = True
 
 # Misma lógica de SameSite para CSRF
 CSRF_COOKIE_SAMESITE = "Lax"
+
+
+SESSION_SAVE_EVERY_REQUEST = True  # Regenera cookie en cada request
+
+# Desactiva cache para HTML dinámico
+CACHE_MIDDLEWARE_SECONDS = 0
+CACHE_MIDDLEWARE_KEY_PREFIX = ""
+
+WHITENOISE_AUTOREFRESH = True
+WHITENOISE_MAX_AGE = 0

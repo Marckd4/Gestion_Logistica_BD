@@ -179,7 +179,8 @@ def dashboard(request):
 from django.contrib.auth import authenticate, login
 from django.shortcuts import render, redirect
 from django.contrib import messages
-
+from django.views.decorators.cache import never_cache
+@never_cache
 def login_usuario(request):
     if request.method == "POST":
         username = request.POST.get("username")
