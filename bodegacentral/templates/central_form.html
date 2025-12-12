@@ -135,6 +135,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+     // ====== Multiplicación automática unidad * pack ======
+    const cajas = document.getElementById('id_cajas');
+    const factorx = document.getElementById('id_factorx');
+    const stockFisico = document.getElementById('id_stock_fisico');
+
+    const actualizarStock = () => {
+        const c = parseFloat(cajas?.value) || 0;
+        const f = parseFloat(factorx?.value) || 0;
+        if (stockFisico) stockFisico.value = (c * f).toFixed(2);
+    };
+
+    if (cajas && factorx && stockFisico) {
+        cajas.addEventListener('input', actualizarStock);
+        factorx.addEventListener('input', actualizarStock);
+    }
 
 </script>
 
