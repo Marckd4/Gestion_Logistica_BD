@@ -17,4 +17,28 @@
 
 </div>
 
+<script>
+// ====== Multiplicación automática unidad * pack ======
+document.addEventListener('DOMContentLoaded', function () {
+
+    const cajas = document.querySelector('#id_cajas');
+    const factorx = document.querySelector('#id_factorx');
+    const stockFisico = document.querySelector('#id_stock_fisico');
+
+    if (!cajas || !factorx || !stockFisico) return; // Evita errores si algún campo no existe
+
+    const actualizarStock = () => {
+        const c = parseFloat(cajas.value) || 0;
+        const f = parseFloat(factorx.value) || 0;
+        stockFisico.value = (c * f).toFixed(2);
+    };
+
+    cajas.addEventListener('input', actualizarStock);
+    factorx.addEventListener('input', actualizarStock);
+
+    // Calcular al cargar el formulario (útil en edición)
+    actualizarStock();
+});
+</script>
+
 {% endblock %}

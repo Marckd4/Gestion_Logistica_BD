@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="container mt-4">
-    <h3>Editar Producto ID: {{ bsf.id }}</h3>
+    <h3>Editar Producto (ID: {{ bsf.id }})</h3>
     <hr>
 
     <form method="POST">
@@ -14,5 +14,30 @@
         <a href="{% url 'data' %}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+
+<script>
+// ====== Multiplicación automática cajas * factorx → stock_fisico ======
+document.addEventListener('DOMContentLoaded', () => {
+
+    const cajas = document.getElementById('id_cajas');
+    const factorx = document.getElementById('id_factorx');
+    const stockFisico = document.getElementById('id_stock_fisico');
+
+    // Validación: si alguno no existe, evitar errores
+    if (!cajas || !factorx || !stockFisico) return;
+
+    const actualizarStock = () => {
+        const c = parseFloat(cajas.value) || 0;
+        const f = parseFloat(factorx.value) || 0;
+        stockFisico.value = (c * f).toFixed(2); // 2 decimales
+    };
+
+    cajas.addEventListener('input', actualizarStock);
+    factorx.addEventListener('input', actualizarStock);
+
+    // Al cargar el formulario, actualizar valores
+    actualizarStock();
+});
+</script>
 
 {% endblock %}
