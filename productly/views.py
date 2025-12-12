@@ -3,7 +3,9 @@ from django.shortcuts import render
 from bodegabsf.models import Bsf
 from bodegacentral.models import Central
 from collections import defaultdict
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def inicio(request):
     return render(request, 'inicio.html')
 

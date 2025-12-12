@@ -180,31 +180,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Configuraciones de Seguridad de Sesiones
 # ============================================
 
-# La cookie de sesión solo viaja por HTTPS (Render usa HTTPS)
-SESSION_COOKIE_SECURE = True
-
-# Evita que JavaScript lea la cookie (protección XSS)
+# --- Seguridad de Cookies ---
+SESSION_COOKIE_SECURE = False  # Cámbialo a True si usas HTTPS
 SESSION_COOKIE_HTTPONLY = True
-
-# Evita que apps externas (WhatsApp Web, Gmail, etc.) reenvíen tu cookie
 SESSION_COOKIE_SAMESITE = "Lax"
 
-# Cerrar sesión al cerrar el navegador
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# --- Control de Sesión ---
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra al cerrar navegador
+SESSION_COOKIE_AGE = 3600  # 1 hora por si acaso
 
-# Duración de la sesión (1 hora)
-# SESSION_COOKIE_AGE = 3600
-
-# Seguridad para CSRF (solo por HTTPS)
-CSRF_COOKIE_SECURE = True
-
-# Misma lógica de SameSite para CSRF
+# Evita que apps externas usen la cookie
 CSRF_COOKIE_SAMESITE = "Lax"
-
-
-SESSION_SAVE_EVERY_REQUEST = True  # Regenera cookie en cada request
-
-# Desactiva cache para HTML dinámico
-CACHE_MIDDLEWARE_SECONDS = 0
-CACHE_MIDDLEWARE_KEY_PREFIX = ""
+CSRF_COOKIE_HTTPONLY = True
 
