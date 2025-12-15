@@ -1,7 +1,9 @@
 from django.contrib import admin
-from .models import Bsf # para admin 
+from .models import Bsf
 
-
-# registrar los modelo 
-
-admin.site.register(Bsf)
+@admin.register(Bsf)
+class BsfAdmin(admin.ModelAdmin):
+    list_display = ('categoria', 'cod_dun', 'saldo', 'stock_fisico')
+    search_fields = ('categoria', 'cod_dun', 'descripcion')  # Búsqueda
+    list_filter = ('categoria', 'fecha_inv')  # Filtros laterales
+    ordering = ('-fecha_inv',)  # Orden por fecha descendente

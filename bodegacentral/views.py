@@ -175,3 +175,18 @@ def resumen_central(request):
         'cod_dun', 'cod_ean', 'cod_sistema', 'descripcion', 'cajas', 'stock_fisico','ubicacion',
     )
     return render(request, 'resumen.html', {'datos': datos})
+
+# ADMIN USUARIO
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def crear_bsf(request):
+    if request.method == 'POST':
+        form = CentralForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_bsf')
+    else:
+        form = CentralForm()
+    return render(request, 'bodegabsf/bsf_form.html', {'form': form})

@@ -1,6 +1,6 @@
 from django.db import models
 import datetime
-
+from auditlog.registry import auditlog
 
 class Central(models.Model):
     categoria = models.CharField(max_length=100, blank=True, null=True)
@@ -26,3 +26,5 @@ class Central(models.Model):
     
     def __str__(self):
         return self.categoria
+    
+auditlog.register(Central)

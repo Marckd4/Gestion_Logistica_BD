@@ -1,5 +1,7 @@
 from django.db import models
 import datetime
+from auditlog.registry import auditlog
+
 
 
 class Bsf(models.Model):
@@ -26,5 +28,7 @@ class Bsf(models.Model):
     
     def __str__(self):
         return self.categoria
+    
+auditlog.register(Bsf)
 
     

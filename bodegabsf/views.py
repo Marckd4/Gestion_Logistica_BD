@@ -179,3 +179,18 @@ def resumen_bsf(request):
         "ubicacion",
     )
     return render(request, "resumen_bsf.html", {"datos": list(datos)})
+
+
+# views.py
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def crear_bsf(request):
+    if request.method == 'POST':
+        form = BsfForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_bsf')
+    else:
+        form = BsfForm()
+    return render(request, 'bodegabsf/bsf_form.html', {'form': form})

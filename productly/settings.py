@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'bodegacentral.apps.BodegacentralConfig', # app bodegacentral
     'django.forms',
     'pedidos.apps.PedidosConfig',
+    'auditlog',
     
     
 ]
