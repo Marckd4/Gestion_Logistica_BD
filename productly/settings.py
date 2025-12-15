@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'bodegabsf.apps.BodegabsfConfig', # app bodegabsf
     'bodegacentral.apps.BodegacentralConfig', # app bodegacentral
     'django.forms',
+    'pedidos.apps.PedidosConfig',
     
     
 ]
