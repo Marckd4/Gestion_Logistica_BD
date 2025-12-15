@@ -189,4 +189,4 @@ def crear_bsf(request):
             return redirect('lista_bsf')
     else:
         form = CentralForm()
-    return render(request, 'bodegabsf/bsf_form.html', {'form': form})
+    return render(request, 'bodegacentral/central_form.html', {'form': form})
