@@ -25,6 +25,7 @@ class Central(models.Model):
     
     
     def __str__(self):
-        return self.categoria
+        return self.categoria or f"Central #{self.pk}"
+
     
 auditlog.register(Central)
