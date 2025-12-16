@@ -194,3 +194,260 @@ def crear_bsf(request):
     else:
         form = BsfForm()
     return render(request, 'bodegabsf/bsf_form.html', {'form': form})
+
+
+# pedidos
+from django.shortcuts import render
+from django.db.models import Sum
+from .models import Bsf
+
+def resumen_pedidos(request):
+    fecha = request.GET.get('fecha')
+    pedido = request.GET.get('pedido')
+    ubicacion = request.GET.get('ubicacion')
+
+    # 🔴 BASE: excluir pedidos vacíos o en 0
+    queryset = Bsf.objects.exclude(pedido__isnull=True).exclude(pedido=0)
+
+    if fecha:
+        queryset = queryset.filter(fecha_inv=fecha)
+
+    if pedido:
+        queryset = queryset.filter(pedido=pedido)
+
+    if ubicacion:
+        queryset = queryset.filter(ubicacion__icontains=ubicacion)
+
+    resumen = (
+        queryset
+        .values(
+            'pedido',
+            'ubicacion',
+            'cod_ean',
+            'cod_dun',
+            'cod_sistema',
+            'descripcion'
+        )
+        .annotate(
+            total_cant_solicitada=Sum('cant_solicitada')
+        )
+        .order_by(
+            'pedido',
+            'ubicacion',
+            'descripcion'
+        )
+    )
+
+    return render(request, 'resumen_pedidos.html', {
+        'resumen': resumen
+    })
+# excel pedidos
+import openpyxl
+from django.http import HttpResponse
+from django.db.models import Sum
+from .models import Bsf
+
+
+def resumen_pedidos_excel(request):
+    fecha = request.GET.get('fecha')
+    pedido = request.GET.get('pedido')
+    ubicacion = request.GET.get('ubicacion')
+
+    # 🔴 SOLO pedidos válidos
+    queryset = Bsf.objects.filter(pedido__gt=0)
+
+    if fecha:
+        queryset = queryset.filter(fecha_inv=fecha)
+
+    if pedido:
+        queryset = queryset.filter(pedido=pedido)
+
+    if ubicacion:
+        queryset = queryset.filter(ubicacion__icontains=ubicacion)
+
+    resumen = (
+        queryset
+        .values(
+            'pedido',
+            'ubicacion',
+            'cod_ean',
+            'cod_dun',
+            'cod_sistema',
+            'descripcion'
+        )
+        .annotate(
+            total_cant_solicitada=Sum('cant_solicitada')
+        )
+        .order_by('pedido', 'ubicacion')
+    )
+
+    # =========================
+    # CREAR EXCEL
+    # =========================
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Resumen Pedidos"
+
+    ws.append([
+        'Pedido',
+        'Ubicación',
+        'Cod EAN',
+        'Cod DUN',
+        'Cod Sistema',
+        'Descripción',
+        'Total Cant. Solicitada'
+    ])
+
+    for r in resumen:
+        ws.append([
+            r['pedido'],
+            r['ubicacion'],
+            r['cod_ean'],
+            r['cod_dun'],
+            r['cod_sistema'],
+            r['descripcion'],
+            r['total_cant_solicitada'] or 0
+        ])
+
+    # =========================
+    # RESPUESTA HTTP (CLAVE)
+    # =========================
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=resumen_pedidos.xlsx'
+
+    wb.save(response)
+
+    return response  # ✅ ESTO SOLUCIONA EL ERROR
+
+
+# solicitudes a facturacion 
+
+from django.shortcuts import render
+from django.db.models import Sum
+from .models import Bsf
+
+
+def resumen_general_pedidos(request):
+    fecha = request.GET.get('fecha')
+    pedido = request.GET.get('pedido')
+    cod_ean = request.GET.get('cod_ean')
+    cod_dun = request.GET.get('cod_dun')
+    cod_sistema = request.GET.get('cod_sistema')
+
+    queryset = Bsf.objects.filter(pedido__gt=0)
+
+    if fecha:
+        queryset = queryset.filter(fecha_inv=fecha)
+
+    if pedido:
+        queryset = queryset.filter(pedido=pedido)
+
+    if cod_ean:
+        queryset = queryset.filter(cod_ean__icontains=cod_ean)
+
+    if cod_dun:
+        queryset = queryset.filter(cod_dun__icontains=cod_dun)
+
+    if cod_sistema:
+        queryset = queryset.filter(cod_sistema__icontains=cod_sistema)
+
+    resumen = (
+        queryset
+        .values(
+            'pedido',
+            'cod_ean',
+            'cod_dun',
+            'cod_sistema',
+            'descripcion'
+        )
+        .annotate(
+            total_cant_solicitada=Sum('cant_solicitada')
+        )
+        .order_by('pedido', 'descripcion')
+    )
+
+    return render(request, 'resumen_general_pedidos.html', {
+        'resumen': resumen
+    })
+
+
+# 02 
+import openpyxl
+from django.http import HttpResponse
+from django.db.models import Sum
+from .models import Bsf
+
+
+def resumen_general_pedidos_excel(request):
+    fecha = request.GET.get('fecha')
+    pedido = request.GET.get('pedido')
+    cod_ean = request.GET.get('cod_ean')
+    cod_dun = request.GET.get('cod_dun')
+    cod_sistema = request.GET.get('cod_sistema')
+
+    queryset = Bsf.objects.filter(pedido__gt=0)
+
+    if fecha:
+        queryset = queryset.filter(fecha_inv=fecha)
+
+    if pedido:
+        queryset = queryset.filter(pedido=pedido)
+
+    if cod_ean:
+        queryset = queryset.filter(cod_ean__icontains=cod_ean)
+
+    if cod_dun:
+        queryset = queryset.filter(cod_dun__icontains=cod_dun)
+
+    if cod_sistema:
+        queryset = queryset.filter(cod_sistema__icontains=cod_sistema)
+
+    resumen = (
+        queryset
+        .values(
+            'pedido',
+            'cod_ean',
+            'cod_dun',
+            'cod_sistema',
+            'descripcion'
+        )
+        .annotate(
+            total_cant_solicitada=Sum('cant_solicitada')
+        )
+        .order_by('pedido')
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Resumen General Pedidos"
+
+    ws.append([
+        'Pedido',
+        'Cod EAN',
+        'Cod DUN',
+        'Cod Sistema',
+        'Descripción',
+        'Total Cant. Solicitada'
+    ])
+
+    for r in resumen:
+        ws.append([
+            r['pedido'],
+            r['cod_ean'],
+            r['cod_dun'],
+            r['cod_sistema'],
+            r['descripcion'],
+            r['total_cant_solicitada'] or 0
+        ])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = (
+        'attachment; filename=resumen_general_pedidos.xlsx'
+    )
+
+    wb.save(response)
+    return response

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h4>📦 Resumen de Pedidos</h4>
+
+<div style="text-align: left;">
+    <a href="{% url 'inicio' %}" class="btn-volver">⬅ Volver</a>
+</div>
+<br>
+
+
+<form method="get" class="row g-2 mb-3">
+
+    <div class="col-md-3">
+        <label>Fecha</label>
+        <input type="date" name="fecha" class="form-control"
+               value="{{ request.GET.fecha }}">
+    </div>
+
+    <div class="col-md-3">
+        <label>Pedido</label>
+        <input type="number" name="pedido" class="form-control"
+               value="{{ request.GET.pedido }}">
+    </div>
+
+    <div class="col-md-3">
+        <label>Ubicación</label>
+        <input type="text" name="ubicacion" class="form-control"
+               value="{{ request.GET.ubicacion }}">
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end gap-2">
+        <button class="btn btn-primary">Filtrar</button>
+
+        <a class="btn btn-success"
+           href="{% url 'resumen_pedidos_excel' %}?{{ request.GET.urlencode }}">
+           📄 Excel
+        </a>
+    </div>
+
+</form>
+
+<table class="table table-bordered table-striped table-sm">
+    <thead>
+        <tr>
+            <th>Pedido</th>
+            <th>Ubicación</th>
+            <th>Cod EAN</th>
+            <th>Cod DUN</th>
+            <th>Cod Sistema</th>
+            <th>Descripción</th>
+            <th>Total Cant.</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in resumen %}
+        <tr>
+            <td>{{ r.pedido }}</td>
+            <td>{{ r.ubicacion }}</td>
+            <td>{{ r.cod_ean }}</td>
+            <td>{{ r.cod_dun }}</td>
+            <td>{{ r.cod_sistema }}</td>
+            <td>{{ r.descripcion }}</td>
+            <td class="text-end fw-bold">
+                {{ r.total_cant_solicitada }}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center">Sin resultados</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

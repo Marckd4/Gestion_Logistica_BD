@@ -33,6 +33,7 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
     path("login/", views.login_usuario, name="login"),
     path('pedidos/', include('pedidos.urls')),
+    
   
     
 

@@ -11,11 +11,11 @@ urlpatterns = [
     path('exportar-excel/', views.exportar_excel, name="exportar_excel"), # url de exportar excel
     path('editar/<int:id>/', views.editar_bsf, name='editar_bsf'),
     path('eliminar/<int:id>/', views.eliminar_bsf, name='eliminar_bsf'),
-     path('resumen-bsf/', views.resumen_bsf, name='resumen_bsf'),
-    
-
-    
-    
-    
+    path('resumen-bsf/', views.resumen_bsf, name='resumen_bsf'),
+    path('resumen-pedidos/', views.resumen_pedidos, name='resumen_pedidos'),
+    path('resumen-pedidos/excel/', views.resumen_pedidos_excel, name='resumen_pedidos_excel'),
+    path('resumen-general-pedidos/',views.resumen_general_pedidos,name='resumen_general_pedidos'),
+    path('resumen-general-pedidos/excel/',views.resumen_general_pedidos_excel,name='resumen_general_pedidos_excel'),
+ 
    
 ]

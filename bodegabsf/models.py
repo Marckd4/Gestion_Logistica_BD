@@ -26,6 +26,10 @@ class Bsf(models.Model):
     numero_contenedor = models.CharField(max_length=100, blank=True, null=True)
     
     
+    cant_solicitada = models.IntegerField(blank=True, null=True)
+    pedido = models.IntegerField(blank=True, null=True)
+    
+    
     def __str__(self):
         return self.categoria or f"Central #{self.pk}"
 
