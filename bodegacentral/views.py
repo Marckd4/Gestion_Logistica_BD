@@ -176,17 +176,18 @@ def resumen_central(request):
     )
     return render(request, 'resumen.html', {'datos': datos})
 
+
 # ADMIN USUARIO
 
 from django.contrib.auth.decorators import login_required
 
 @login_required
-def crear_bsf(request):
+def crear_Central(request):
     if request.method == 'POST':
         form = CentralForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('lista_bsf')
+            return redirect('lista_Central')
     else:
         form = CentralForm()
     return render(request, 'bodegacentral/central_form.html', {'form': form})
