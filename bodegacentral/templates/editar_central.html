@@ -39,6 +39,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // Calcular al cargar el formulario (útil en edición)
     actualizarStock();
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("form");
+
+    form.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            return false;
+        }
+    });
+});
+
 </script>
 
 {% endblock %}
