@@ -16,6 +16,8 @@ urlpatterns = [
     path('resumen-pedidos/excel/', views.resumen_pedidos_excel, name='resumen_pedidos_excel'),
     path('resumen-general-pedidos/',views.resumen_general_pedidos,name='resumen_general_pedidos'),
     path('resumen-general-pedidos/excel/',views.resumen_general_pedidos_excel,name='resumen_general_pedidos_excel'),
+    path("importar-excel/", views.importar_excel, name="importar_excel"),
+    path("borrar-todo/", views.borrar_todo_bsf, name="borrar_todo_bsf"),
  
    
 ]

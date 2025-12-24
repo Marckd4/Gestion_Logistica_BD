@@ -9,7 +9,26 @@
 <br>
 
 <!-- BUSCADOR -->
-<input id="searchInput" type="text" class="form-control mb-3" placeholder="Buscar...">
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input id="searchInput" type="text" class="form-control"
+               placeholder="🔍 Buscar en toda la tabla...">
+    </div>
+
+    <div class="col-md-4">
+        <select id="pedidoFilter" class="form-select">
+            <option value="">📦 Todos los pedidos</option>
+        </select>
+    </div>
+
+    <div class="col-md-4 d-grid">
+        <button id="clearFilters" class="btn btn-secondary">
+            🧹 Limpiar filtros
+        </button>
+    </div>
+</div>
+
+
 
 
 
@@ -96,28 +115,49 @@
 <div id="pagination" class="mt-3 d-flex gap-2 justify-content-center"></div>
 
 <script>
-// =======================
-// CONFIGURACIÓN
-// =======================
 const rowsPerPage = 10;
 let currentPage = 1;
 
-// =======================
-// ELEMENTOS
-// =======================
 const searchInput = document.getElementById("searchInput");
+const pedidoFilter = document.getElementById("pedidoFilter");
+const clearBtn = document.getElementById("clearFilters");
 const table = document.getElementById("dataTable");
-const rows = Array.from(table.getElementsByTagName("tbody")[0].rows);
+const rows = Array.from(table.tBodies[0].rows);
 const paginationContainer = document.getElementById("pagination");
 
 // =======================
-// FILTRAR FILAS
+// CARGAR PEDIDOS ÚNICOS
+// =======================
+function cargarPedidos() {
+    const pedidos = new Set();
+
+    rows.forEach(row => {
+        const pedido = row.cells[3].innerText.trim();
+        if (pedido) pedidos.add(pedido);
+    });
+
+    [...pedidos].sort().forEach(pedido => {
+        const option = document.createElement("option");
+        option.value = pedido.toLowerCase();
+        option.textContent = pedido;
+        pedidoFilter.appendChild(option);
+    });
+}
+
+// =======================
+// FILTRO COMBINADO
 // =======================
 function filterRows() {
-    const text = searchInput.value.toLowerCase();
-    const filtered = rows.filter(row =>
-        row.innerText.toLowerCase().includes(text)
-    );
+    const texto = searchInput.value.toLowerCase();
+    const pedidoSeleccionado = pedidoFilter.value;
+
+    const filtered = rows.filter(row => {
+        const textoFila = row.innerText.toLowerCase();
+        const pedidoFila = row.cells[3].innerText.toLowerCase();
+
+        return textoFila.includes(texto) &&
+               (pedidoSeleccionado === "" || pedidoFila === pedidoSeleccionado);
+    });
 
     currentPage = 1;
     displayPage(filtered);
@@ -125,7 +165,19 @@ function filterRows() {
 }
 
 // =======================
-// MOSTRAR FILAS DE LA PÁGINA
+// LIMPIAR FILTROS
+// =======================
+function limpiarFiltros() {
+    searchInput.value = "";
+    pedidoFilter.value = "";
+    currentPage = 1;
+
+    displayPage(rows);
+    setupPagination(rows);
+}
+
+// =======================
+// MOSTRAR FILAS
 // =======================
 function displayPage(filteredRows) {
     rows.forEach(row => row.style.display = "none");
@@ -142,7 +194,7 @@ function displayPage(filteredRows) {
 // PAGINACIÓN
 // =======================
 function setupPagination(filteredRows) {
-    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
 
     paginationContainer.innerHTML = `
         <button class="btn btn-primary btn-sm" id="prevBtn" ${currentPage===1?'disabled':''}>Anterior</button>
@@ -168,15 +220,19 @@ function setupPagination(filteredRows) {
 }
 
 // =======================
-// EVENTO DE BÚSQUEDA
+// EVENTOS
 // =======================
 searchInput.addEventListener("keyup", filterRows);
+pedidoFilter.addEventListener("change", filterRows);
+clearBtn.addEventListener("click", limpiarFiltros);
 
 // =======================
-// MOSTRAR TODO AL INICIO
+// INICIO
 // =======================
+cargarPedidos();
 displayPage(rows);
 setupPagination(rows);
 </script>
+
 
 {% endblock %}

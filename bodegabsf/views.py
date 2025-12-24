@@ -451,3 +451,159 @@ def resumen_general_pedidos_excel(request):
 
     wb.save(response)
     return response
+
+
+
+# importar
+import pandas as pd
+from datetime import date
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db import transaction
+
+from .models import Bsf
+from .forms import ImportarExcelForm
+
+
+# -----------------------------
+# LIMPIEZA DE DATOS
+# -----------------------------
+def limpiar(valor):
+    """
+    - NaN / vacío → None
+    - string vacío → None
+    - 0 → 0
+    """
+    if pd.isna(valor):
+        return None
+    if isinstance(valor, str):
+        valor = valor.strip()
+        return valor if valor else None
+    return valor
+
+
+def limpiar_fecha(valor):
+    """
+    Acepta solo fechas válidas
+    Texto como 'SIN INFORMACION' → None
+    """
+    if pd.isna(valor):
+        return None
+
+    if isinstance(valor, pd.Timestamp):
+        return valor.date()
+
+    # Texto u otro tipo → None
+    return None
+
+
+# -----------------------------
+# IMPORTAR EXCEL
+# -----------------------------
+def importar_excel(request):
+    if request.method == "POST":
+        form = ImportarExcelForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            archivo = request.FILES["archivo"]
+
+            try:
+                df = pd.read_excel(archivo)
+
+                nuevos = []
+                actualizar = []
+
+                # Obtener códigos existentes
+                cods = df["cod_ean"].dropna().unique()
+                existentes = {
+                    obj.cod_ean: obj
+                    for obj in Bsf.objects.filter(cod_ean__in=cods)
+                }
+
+                for _, fila in df.iterrows():
+                    cod_ean = limpiar(fila.get("cod_ean"))
+                    if not cod_ean:
+                        continue
+
+                    data = {
+                        "categoria": limpiar(fila.get("categoria")),
+                        "empresa": limpiar(fila.get("empresa")),
+                        "ubicacion": limpiar(fila.get("ubicacion")),
+                        "cod_dun": limpiar(fila.get("cod_dun")),
+                        "cod_sistema": limpiar(fila.get("cod_sistema")),
+                        "descripcion": limpiar(fila.get("descripcion")),
+                        "unidad": limpiar(fila.get("unidad")),
+                        "pack": int(limpiar(fila.get("pack"))) if limpiar(fila.get("pack")) is not None else None,
+                        "factorx": float(limpiar(fila.get("factorx"))) if limpiar(fila.get("factorx")) is not None else None,
+                        "cajas": int(limpiar(fila.get("cajas"))) if limpiar(fila.get("cajas")) is not None else None,
+                        "saldo": int(limpiar(fila.get("saldo"))) if limpiar(fila.get("saldo")) is not None else None,
+                        "stock_fisico": int(limpiar(fila.get("stock_fisico"))) if limpiar(fila.get("stock_fisico")) is not None else None,
+                        "observacion": limpiar(fila.get("observacion")),
+                        "fecha_inv": limpiar_fecha(fila.get("fecha_inv")),
+                        "encargado": limpiar(fila.get("encargado")),
+                        "fecha_venc": limpiar_fecha(fila.get("fecha_venc")),
+                        "fecha_imp": date.today(),
+                        "numero_contenedor": limpiar(fila.get("numero_contenedor")),
+                        "cant_solicitada": int(limpiar(fila.get("cant_solicitada"))) if limpiar(fila.get("cant_solicitada")) is not None else None,
+                        "pedido": int(limpiar(fila.get("pedido"))) if limpiar(fila.get("pedido")) is not None else None,
+                    }
+
+                    if cod_ean in existentes:
+                        obj = existentes[cod_ean]
+                        for campo, valor in data.items():
+                            setattr(obj, campo, valor)
+                        actualizar.append(obj)
+                    else:
+                        nuevos.append(Bsf(cod_ean=cod_ean, **data))
+
+                # Guardado optimizado
+                with transaction.atomic():
+                    if nuevos:
+                        Bsf.objects.bulk_create(nuevos, batch_size=500)
+                    if actualizar:
+                        Bsf.objects.bulk_update(
+                            actualizar,
+                            fields=data.keys(),
+                            batch_size=500
+                        )
+
+                messages.success(
+                    request,
+                    f"Importación OK: {len(nuevos)} nuevos / {len(actualizar)} actualizados"
+                )
+                return redirect("importar_excel")
+
+            except Exception as e:
+                messages.error(request, f"Error al importar: {e}")
+
+    else:
+        form = ImportarExcelForm()
+
+    return render(request, "importar_excel.html", {"form": form})
+
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import transaction
+from django.contrib import messages
+from django.shortcuts import redirect
+
+
+def es_admin(user):
+    return user.is_superuser
+
+
+@login_required
+@user_passes_test(es_admin)
+def borrar_todo_bsf(request):
+    if request.method == "POST":
+        with transaction.atomic():
+            total = Bsf.objects.count()
+            Bsf.objects.all().delete()
+
+        messages.success(
+            request,
+            f"Se eliminaron {total} registros correctamente."
+        )
+
+    return redirect("importar_excel")
+

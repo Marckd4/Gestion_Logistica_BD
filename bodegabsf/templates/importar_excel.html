@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Importar Excel - Inventario BSF</h3>
+
+      <div style="text-align: left;">
+    <a href="{% url 'inicio' %}" class="btn-volver">⬅ Volver</a>
+    </div>
+
+    <br>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-success">Importar</button>
+    </form>
+
+    {% for message in messages %}
+        <div class="alert alert-info mt-3">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endblock %}

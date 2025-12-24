@@ -32,3 +32,7 @@ class BsfForm(forms.ModelForm):
 #             'descripcion': forms.HiddenInput(attrs={'id': 'id_descripcion'}),
 #         }
 
+from django import forms
+
+class ImportarExcelForm(forms.Form):
+    archivo = forms.FileField(label="Archivo Excel (.xlsx)")

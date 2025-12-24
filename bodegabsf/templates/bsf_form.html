@@ -6,6 +6,12 @@
 
     <h3 class="text-center mb-4">Ingreso de Mercaderia BSF</h3>
 
+    <div style="text-align: left;">
+    <a href="{% url 'inicio' %}" class="btn-volver">⬅ Volver</a>
+    </div>
+
+    <br>
+
     <form novalidate action="{% url 'formulario' %}" method="post" class="p-4 bg-light shadow rounded">
         {% csrf_token %}
 
