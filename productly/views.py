@@ -68,7 +68,9 @@ def exportar_resumen_excel(request):
     from bodegabsf.models import Bsf
     from bodegacentral.models import Central
 
-    # ==== Construcción del resumen unificado ====
+    def safe(val):
+        return val if val is not None else ""
+
     resumen_dict = defaultdict(lambda: {
         "cod_dun": "",
         "cod_ean": "",
@@ -81,36 +83,39 @@ def exportar_resumen_excel(request):
         "stock_central": 0,
     })
 
-    # ---- Datos BSF ----
+    # ========= BSF =========
     for b in Bsf.objects.all():
-        key = f"{b.cod_dun}_{b.cod_sistema}"
+        key = f"{safe(b.cod_dun)}_{safe(b.cod_sistema)}"
         d = resumen_dict[key]
-        d["cod_dun"] = b.cod_dun
-        d["cod_ean"] = b.cod_ean
-        d["cod_sistema_bsf"] = b.cod_sistema
-        d["descripcion"] = b.descripcion
+
+        d["cod_dun"] = safe(b.cod_dun)
+        d["cod_ean"] = safe(b.cod_ean)
+        d["cod_sistema_bsf"] = safe(b.cod_sistema)
+        d["descripcion"] = safe(b.descripcion)
         d["cajas_bsf"] += b.cajas or 0
         d["stock_bsf"] += b.stock_fisico or 0
 
-    # ---- Datos Central ----
+    # ========= CENTRAL =========
     for c in Central.objects.all():
-        key = f"{c.cod_dun}_{c.cod_sistema}"
+        key = f"{safe(c.cod_dun)}_{safe(c.cod_sistema)}"
         d = resumen_dict[key]
-        d["cod_dun"] = c.cod_dun
-        d["cod_ean"] = c.cod_ean
-        d["cod_sistema_central"] = c.cod_sistema
-        d["descripcion"] = c.descripcion
+
+        d["cod_dun"] = safe(c.cod_dun)
+        d["cod_ean"] = safe(c.cod_ean)
+        d["cod_sistema_central"] = safe(c.cod_sistema)
+        d["descripcion"] = d["descripcion"] or safe(c.descripcion)
         d["cajas_central"] += c.cajas or 0
         d["stock_central"] += c.stock_fisico or 0
 
-    # Convertir a lista y ordenar
+    # ========= LISTA FINAL =========
     resumen = []
     for data in resumen_dict.values():
         data["total_cajas"] = data["cajas_bsf"] + data["cajas_central"]
         resumen.append(data)
-    resumen = sorted(resumen, key=lambda x: x["cod_dun"])
 
-    # ==== Crear Excel ====
+    resumen.sort(key=lambda x: str(x["cod_dun"]))
+
+    # ========= EXCEL =========
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Resumen Inventario"
@@ -120,29 +125,29 @@ def exportar_resumen_excel(request):
         "Cajas BSF", "Cajas Central", "Stock BSF", "Stock Central", "Total Cajas"
     ]
 
-    # Encabezados
-    for col_num, columna in enumerate(columnas, 1):
-        ws.cell(row=1, column=col_num, value=columna).font = Font(bold=True)
+    for col, name in enumerate(columnas, 1):
+        ws.cell(row=1, column=col, value=name).font = Font(bold=True)
 
-    # Filas
-    for row_num, item in enumerate(resumen, 2):
-        ws.cell(row=row_num, column=1, value=item["cod_dun"])
-        ws.cell(row=row_num, column=2, value=item["cod_ean"])
-        ws.cell(row=row_num, column=3, value=item["cod_sistema_bsf"])
-        ws.cell(row=row_num, column=4, value=item["cod_sistema_central"])
-        ws.cell(row=row_num, column=5, value=item["descripcion"])
-        for col, key in zip(range(6, 11), ["cajas_bsf","cajas_central","stock_bsf","stock_central","total_cajas"]):
-            ws.cell(row=row_num, column=col, value=item[key]).alignment = Alignment(horizontal="right")
+    for row, item in enumerate(resumen, 2):
+        ws.cell(row=row, column=1, value=item["cod_dun"])
+        ws.cell(row=row, column=2, value=item["cod_ean"])
+        ws.cell(row=row, column=3, value=item["cod_sistema_bsf"])
+        ws.cell(row=row, column=4, value=item["cod_sistema_central"])
+        ws.cell(row=row, column=5, value=item["descripcion"])
+
+        for col, key in enumerate(
+            ["cajas_bsf", "cajas_central", "stock_bsf", "stock_central", "total_cajas"], 6
+        ):
+            ws.cell(row=row, column=col, value=item[key]).alignment = Alignment(horizontal="right")
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     response["Content-Disposition"] = 'attachment; filename="resumen_unificado.xlsx"'
     wb.save(response)
+
     return response
 
-
-# usuario
 
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
