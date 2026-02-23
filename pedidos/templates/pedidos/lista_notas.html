@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2>Notas de Venta</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'crear_nota' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus"></i> Nueva Nota
+            </a>
+        </div>
+    </div>
+
+    {% if notas %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#ID</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>RUT</th>
+                        <th>Bodega</th>
+                        <th>Vendedor</th>
+                        <th>Total</th>
+                        <th>Productos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nota in notas %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-primary">{{ nota.id }}</span>
+                        </td>
+                        <td>{{ nota.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>{{ nota.cliente }}</td>
+                        <td>{{ nota.rut_cliente }}</td>
+                        <td>
+                            <span class="badge bg-success">
+                                {{ nota.get_tipo_bodega_display|default:"Sin asignar" }}
+                            </span>
+                        </td>
+                        <td>{{ nota.vendedor.first_name|default:nota.vendedor }}</td>
+                        <td>
+                            <strong>${{ nota.total|floatformat:0 }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ nota.detalles.all|length }} items
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'detalle_nota' nota.id %}" class="btn btn-info" title="Ver">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'agregar_producto' nota.id %}" class="btn btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <i class="fas fa-info-circle"></i> No hay notas de venta registradas.
+            <a href="{% url 'crear_nota' %}" class="alert-link">Crear nueva nota</a>
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

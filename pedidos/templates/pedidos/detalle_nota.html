@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h3 class="mb-0">Nota de Venta #{{ nota.id }}</h3>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-success">{{ nota.get_tipo_bodega_display }}</span>
+                    <span class="badge bg-info">{{ nota.fecha|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            
+            <!-- Datos del Cliente -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2">Información del Cliente</h5>
+                    <p><strong>Cliente:</strong> {{ nota.cliente }}</p>
+                    <p><strong>RUT:</strong> {{ nota.rut_cliente }}</p>
+                    <p><strong>Giro:</strong> {{ nota.giro }}</p>
+                    <p><strong>Teléfono:</strong> {{ nota.telefono }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2">Dirección de Entrega</h5>
+                    <p><strong>Dirección:</strong> {{ nota.direccion }}</p>
+                    <p><strong>Comuna:</strong> {{ nota.comuna }}</p>
+                    <p><strong>Ciudad:</strong> {{ nota.ciudad }}</p>
+                    <p><strong>Lugar Entrega:</strong> {{ nota.lugar_de_entrega }}</p>
+                </div>
+            </div>
+
+            <!-- Datos de Entrega -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2">Información de Entrega</h5>
+                    <p><strong>Fecha Programada:</strong> {{ nota.fecha_entrega|date:"d/m/Y"|default:"No especificada" }}</p>
+                    <p><strong>Hora Programada:</strong> {{ nota.hora_entrega|time:"H:i"|default:"No especificada" }}</p>
+                    <p><strong>Persona Responsable:</strong> {{ nota.persona_responsable|default:"No especificada" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2">Datos de Pago</h5>
+                    <p><strong>Forma de Pago:</strong> {{ nota.forma_pago }}</p>
+                    <p><strong>Vendedor:</strong> {{ nota.vendedor }}</p>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Detalle de Productos -->
+            <h5 class="mb-3">Detalle de Productos</h5>
+            
+            {% if nota.detalles.all %}
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>EAN</th>
+                                <th>DUN</th>
+                                <th>Formato</th>
+                                <th>Cantidad</th>
+                                <th>Cap. Caja</th>
+                                <th>P. Caja</th>
+                                <th>P. Unitario</th>
+                                <th>Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in nota.detalles.all %}
+                            <tr class="text-center">
+                                <td>{{ d.codigo }}</td>
+                                <td class="text-start">{{ d.descripcion }}</td>
+                                <td>{{ d.ean }}</td>
+                                <td>{{ d.dun }}</td>
+                                <td>{{ d.formato_venta }}</td>
+                                <td>{{ d.cantidad_solicitada }}</td>
+                                <td>{{ d.capacidad_x_caja }}</td>
+                                <td>${{ d.precio_x_caja|floatformat:0 }}</td>
+                                <td>${{ d.precio_unitario|floatformat:2 }}</td>
+                                <td><strong>${{ d.importe_a_facturar|floatformat:0 }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Totales -->
+                <div class="row">
+                    <div class="col-md-8"></div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3 fs-5">
+                                    <strong>Subtotal (Neto):</strong>
+                                    <span>${{ nota.neto|floatformat:0 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3 fs-5">
+                                    <strong>IVA 19%:</strong>
+                                    <span>${{ nota.iva|floatformat:0 }}</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between fs-5">
+                                    <h5 class="mb-0">TOTAL:</h5>
+                                    <h5 class="mb-0 text-success">${{ nota.total|floatformat:0 }}</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-exclamation-triangle"></i> Esta nota no tiene productos
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer bg-light">
+            <div class="d-flex gap-2">
+                <a href="{% url 'agregar_producto' nota.id %}" class="btn btn-warning">
+                    <i class="fas fa-plus"></i> Agregar Más Productos
+                </a>
+                <a href="{% url 'lista_notas' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a Notas
+                </a>
+                <button class="btn btn-primary ms-auto" onclick="window.print()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header bg-warning text-dark">
+            <h3 class="mb-0">Seleccionar Bodega</h3>
+        </div>
+        <div class="card-body p-5">
+            <p class="lead mb-4">
+                <strong>Nota ID:</strong> {{ nota.id }} <br>
+                <strong>Cliente:</strong> {{ nota.cliente }}
+            </p>
+
+            <p class="text-muted mb-4">
+                Para agregar productos, debes seleccionar primero de cuál bodega deseas obtenerlos.
+            </p>
+
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Selecciona una Bodega:</strong></label>
+                        
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button type="submit" name="bodega" value="bsf" class="btn btn-outline-primary btn-lg mb-3">
+                                <i class="fas fa-warehouse"></i> Bodega BSF
+                            </button>
+                            <button type="submit" name="bodega" value="central" class="btn btn-outline-success btn-lg">
+                                <i class="fas fa-building"></i> Bodega Central
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="mt-4">
+                <a href="{% url 'lista_notas' %}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Volver a Notas
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
