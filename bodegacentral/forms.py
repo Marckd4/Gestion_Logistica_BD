@@ -16,5 +16,9 @@ class CentralForm(forms.ModelForm):
     class Meta:
         model = Central
         fields = "__all__"
+        widgets = {
+            "categoria": forms.Select(choices=[("IMP", "IMP"), ("NAC", "NAC")]),
+            "empresa": forms.Select(choices=[("ChileanTrading", "ChileanTrading"), ("Worlpack", "Worlpack")]),
+        }
 
 

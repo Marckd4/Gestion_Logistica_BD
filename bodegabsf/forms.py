@@ -16,6 +16,10 @@ class BsfForm(forms.ModelForm):
     class Meta:
         model = Bsf
         fields = "__all__"
+        widgets = {
+            "categoria": forms.Select(choices=[("IMP", "IMP"), ("NAC", "NAC")]),
+            "empresa": forms.Select(choices=[("ChileanTrading", "ChileanTrading"), ("Worlpack", "Worlpack")]),
+        }
         
 
 
