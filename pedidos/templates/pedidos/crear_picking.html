@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="text-align: left;" class="mb-3">
+    <a href="{% url 'status_pedido' %}" class="btn-volver">⬅ Volver</a>
+</div>
+
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Picking Nota de Venta #{{ nota.id }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-4"><strong>Cliente:</strong> {{ nota.cliente|default:"-" }}</div>
+                <div class="col-md-4"><strong>Vendedor:</strong> {{ nota.vendedor.username }}</div>
+                <div class="col-md-4"><strong>Fecha:</strong> {{ nota.fecha|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if pendientes %}
+    <div class="alert alert-warning">
+        <strong>Advertencia:</strong> Hay productos con stock insuficiente en Bodega Central.
+        <ul class="mb-0 mt-2">
+            {% for pendiente in pendientes %}
+            <li>{{ pendiente }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h6 class="mb-0">Ubicaciones asignadas para extracción</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cod Sistema</th>
+                            <th>Cod EAN</th>
+                            <th>Cod DUN</th>
+                            <th>Descripción</th>
+                            <th>Cantidad solicitada</th>
+                            <th>Ubicación Central</th>
+                            <th>Cajas disponibles</th>
+                            <th>Cajas a extraer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in plan_picking %}
+                            {% if item.asignaciones %}
+                                {% for a in item.asignaciones %}
+                                <tr>
+                                    {% if forloop.first %}
+                                    <td rowspan="{{ item.asignaciones|length }}">{{ item.detalle.codigo|default:"-" }}</td>
+                                    <td rowspan="{{ item.asignaciones|length }}">{{ item.detalle.ean|default:"-" }}</td>
+                                    <td rowspan="{{ item.asignaciones|length }}">{{ item.detalle.dun|default:"-" }}</td>
+                                    <td rowspan="{{ item.asignaciones|length }}">{{ item.detalle.descripcion|default:"-" }}</td>
+                                    <td rowspan="{{ item.asignaciones|length }}">{{ item.cantidad_requerida }}</td>
+                                    {% endif %}
+                                    <td>{{ a.ubicacion }}</td>
+                                    <td>{{ a.cajas_disponibles }}</td>
+                                    <td>{{ a.cajas_a_extraer }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td>{{ item.detalle.codigo|default:"-" }}</td>
+                                    <td>{{ item.detalle.ean|default:"-" }}</td>
+                                    <td>{{ item.detalle.dun|default:"-" }}</td>
+                                    <td>{{ item.detalle.descripcion|default:"-" }}</td>
+                                    <td>{{ item.cantidad_requerida }}</td>
+                                    <td class="text-muted">Sin ubicación disponible</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                </tr>
+                            {% endif %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No hay productos en la nota.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post" class="mt-3">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success" {% if pendientes %}disabled{% endif %}>Término de Picking</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -122,7 +122,7 @@ def exportar_resumen_excel(request):
 
     columnas = [
         "Cod DUN", "Cod EAN", "Cod Sistema BSF", "Cod Sistema Central", "Descripción",
-        "Cajas BSF", "Cajas Central", "Stock BSF", "Stock Central", "Total Cajas"
+        "Total cajas BSF", "Total cajas Lingues", "Total Cajas"
     ]
 
     for col, name in enumerate(columnas, 1):
@@ -136,7 +136,7 @@ def exportar_resumen_excel(request):
         ws.cell(row=row, column=5, value=item["descripcion"])
 
         for col, key in enumerate(
-            ["cajas_bsf", "cajas_central", "stock_bsf", "stock_central", "total_cajas"], 6
+            ["cajas_bsf", "cajas_central", "total_cajas"], 6
         ):
             ws.cell(row=row, column=col, value=item[key]).alignment = Alignment(horizontal="right")
 
@@ -186,9 +186,15 @@ def dashboard(request):
 from django.contrib.auth import authenticate, login
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.messages import get_messages
 from django.views.decorators.cache import never_cache
 @never_cache
 def login_usuario(request):
+    if request.method == "GET":
+        storage = get_messages(request)
+        for _ in storage:
+            pass
+
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
@@ -199,6 +205,6 @@ def login_usuario(request):
             login(request, user)
             return redirect('inicio')  # Ajusta si quieres otra página de inicio
         else:
-            messages.error(request, "Usuario o contraseña incorrectos")
+            messages.error(request, "Credenciales inválidas, intenta nuevamente.")
 
     return render(request, "login.html")

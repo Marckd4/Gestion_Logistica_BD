@@ -1,14 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
 from django.db.models.functions import Replace, Upper
 from django.db.models import Value
 from django.db.models import Q
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
+from django.db import transaction
 from decimal import Decimal, ROUND_HALF_UP
 from decimal import InvalidOperation
 
@@ -207,10 +209,216 @@ def terminar_pedido(request, nota_id):
     return redirect('status_pedido')
 
 
+def _obtener_ids_seleccionados(request):
+    ids_limpios = []
+    for nota_id in request.POST.getlist('nota_ids'):
+        try:
+            valor = int(nota_id)
+            if valor > 0 and valor not in ids_limpios:
+                ids_limpios.append(valor)
+        except (TypeError, ValueError):
+            continue
+    return ids_limpios
+
+
+def _exportar_notas_excel(notas):
+    import openpyxl
+    from openpyxl.styles import Font
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Notas de Venta"
+
+    columnas = [
+        "Numero Nota",
+        "Cliente",
+        "Usuario",
+        "Fecha",
+        "Estado",
+        "Tipo Bodega",
+        "Neto",
+        "IVA",
+        "Total",
+    ]
+
+    for col_num, titulo in enumerate(columnas, 1):
+        celda = ws.cell(row=1, column=col_num, value=titulo)
+        celda.font = Font(bold=True)
+
+    for row_num, nota in enumerate(notas, 2):
+        ws.cell(row=row_num, column=1, value=nota.id)
+        ws.cell(row=row_num, column=2, value=nota.cliente or "")
+        ws.cell(row=row_num, column=3, value=nota.vendedor.username if nota.vendedor else "")
+        ws.cell(row=row_num, column=4, value=nota.fecha.strftime('%d/%m/%Y %H:%M') if nota.fecha else "")
+        ws.cell(row=row_num, column=5, value=nota.get_estado_display())
+        ws.cell(row=row_num, column=6, value=nota.get_tipo_bodega_display() if nota.tipo_bodega else "")
+        ws.cell(row=row_num, column=7, value=float(nota.neto or 0))
+        ws.cell(row=row_num, column=8, value=float(nota.iva or 0))
+        ws.cell(row=row_num, column=9, value=float(nota.total or 0))
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="notas_venta_seleccionadas.xlsx"'
+    wb.save(response)
+    return response
+
+
 @login_required
 def status_pedido(request):
-    notas = NotaVenta.objects.select_related('vendedor').order_by('-fecha')
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '').strip()
+
+        if accion == 'excel':
+            ids = _obtener_ids_seleccionados(request)
+            if ids:
+                notas_seleccionadas = NotaVenta.objects.filter(id__in=ids).select_related('vendedor').order_by('-fecha')
+            else:
+                notas_seleccionadas = NotaVenta.objects.select_related('vendedor').order_by('-fecha')
+            return _exportar_notas_excel(notas_seleccionadas)
+
+        if accion == 'eliminar':
+            ids = _obtener_ids_seleccionados(request)
+            if not ids:
+                messages.error(request, 'Debes seleccionar al menos una nota de venta para eliminar.')
+                return redirect('status_pedido')
+
+            notas_seleccionadas = NotaVenta.objects.filter(id__in=ids).select_related('vendedor').order_by('-fecha')
+            cantidad = notas_seleccionadas.count()
+            notas_seleccionadas.delete()
+            messages.success(request, f'Se eliminaron {cantidad} nota(s) de venta.')
+            return redirect('status_pedido')
+
+        messages.error(request, 'Acción no válida.')
+        return redirect('status_pedido')
+
+    notas_qs = NotaVenta.objects.select_related('vendedor').order_by('-fecha')
+    paginator = Paginator(notas_qs, 10)
+    page_number = request.GET.get('page')
+    notas = paginator.get_page(page_number)
     return render(request, 'pedidos/status_pedido.html', {'notas': notas})
+
+
+def _buscar_ubicaciones_central_para_detalle(detalle):
+    codigo = (detalle.codigo or '').strip()
+    ean = (detalle.ean or '').strip()
+    dun = (detalle.dun or '').strip()
+
+    if codigo:
+        qs = Central.objects.filter(cod_sistema__iexact=codigo).order_by('id')
+        if qs.exists():
+            return qs
+
+    if ean:
+        qs = Central.objects.filter(cod_ean__iexact=ean).order_by('id')
+        if qs.exists():
+            return qs
+
+    if dun:
+        qs = Central.objects.filter(cod_dun__iexact=dun).order_by('id')
+        if qs.exists():
+            return qs
+
+    return Central.objects.none()
+
+
+def _construir_plan_picking(nota, bloquear=False):
+    detalles_plan = []
+    pendientes = []
+
+    for detalle in nota.detalles.all().order_by('id'):
+        cantidad_requerida = int(detalle.cantidad_solicitada or 0)
+        faltante = cantidad_requerida
+
+        ubicaciones_qs = _buscar_ubicaciones_central_para_detalle(detalle)
+        if bloquear:
+            ubicaciones_qs = ubicaciones_qs.select_for_update()
+
+        asignaciones = []
+        for item in ubicaciones_qs:
+            cajas_disponibles = int(item.cajas or 0)
+            if cajas_disponibles <= 0:
+                continue
+
+            extraer = min(faltante, cajas_disponibles)
+            if extraer <= 0:
+                continue
+
+            asignaciones.append(
+                {
+                    'central_id': item.id,
+                    'ubicacion': item.ubicacion or '-',
+                    'cod_sistema': item.cod_sistema or '-',
+                    'descripcion': item.descripcion or detalle.descripcion or '-',
+                    'cajas_disponibles': cajas_disponibles,
+                    'cajas_a_extraer': extraer,
+                }
+            )
+            faltante -= extraer
+
+            if faltante <= 0:
+                break
+
+        detalle_info = {
+            'detalle': detalle,
+            'cantidad_requerida': cantidad_requerida,
+            'asignaciones': asignaciones,
+            'faltante': max(faltante, 0),
+        }
+        detalles_plan.append(detalle_info)
+
+        if faltante > 0:
+            pendientes.append(
+                f"{detalle.codigo or '-'} ({detalle.descripcion or '-'}) - faltan {faltante} cajas"
+            )
+
+    return detalles_plan, pendientes
+
+
+@login_required
+def crear_picking(request, nota_id):
+    nota = get_object_or_404(
+        NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
+        id=nota_id,
+    )
+
+    if request.method == 'POST':
+        with transaction.atomic():
+            nota_bloqueada = get_object_or_404(
+                NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
+                id=nota_id,
+            )
+            plan, pendientes = _construir_plan_picking(nota_bloqueada, bloquear=True)
+
+            if pendientes:
+                messages.error(
+                    request,
+                    'No se pudo finalizar picking por stock insuficiente: ' + '; '.join(pendientes),
+                )
+                return redirect('crear_picking', nota_id=nota_id)
+
+            for detalle_plan in plan:
+                for asignacion in detalle_plan['asignaciones']:
+                    central = Central.objects.get(id=asignacion['central_id'])
+                    cajas_actuales = int(central.cajas or 0)
+                    nuevas_cajas = max(cajas_actuales - int(asignacion['cajas_a_extraer']), 0)
+                    central.cajas = nuevas_cajas
+                    central.save(update_fields=['cajas'])
+
+        messages.success(request, f"Picking finalizado para la Nota #{nota_id}.")
+        return redirect('status_pedido')
+
+    plan, pendientes = _construir_plan_picking(nota)
+
+    return render(
+        request,
+        'pedidos/crear_picking.html',
+        {
+            'nota': nota,
+            'plan_picking': plan,
+            'pendientes': pendientes,
+        },
+    )
 
 
 @login_required

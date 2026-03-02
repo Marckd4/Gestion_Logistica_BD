@@ -13,14 +13,6 @@
     🔄 Actualizar
 </a>
 
-<input id="searchInput" type="text" class="form-control mb-3" placeholder="Buscar...">
-
-<style>
-.fila-diferente {
-    background-color: #ffcccc !important; /* Rojo suave */
-}
-</style>
-
 <div class="table-scroll">
 <table id="dataTable" class="table table-striped table-hover table-bordered">
     <thead>
@@ -32,17 +24,13 @@
             <th>Descripción</th>
             <th>Total cajas BSF</th>
             <th>Total cajas Lingues</th>
-            <th>Saldo BSF</th>
-            <th>Saldo Lingues</th>
             <th>Total Cajas</th>
         </tr>
     </thead>
 
     <tbody>
         {% for item in resumen %}
-
-        <!-- FILA EN ROJO SI LOS CODIGOS DE SISTEMA NO COINCIDEN -->
-        <tr class="{% if item.cod_sistema_bsf|default:'' != item.cod_sistema_central|default:'' %}fila-diferente{% endif %}">
+        <tr>
             <td>{{ item.cod_dun }}</td>
             <td>{{ item.cod_ean }}</td>
             <td>{{ item.cod_sistema_bsf }}</td>
@@ -50,8 +38,6 @@
             <td>{{ item.descripcion }}</td>
             <td>{{ item.cajas_bsf }}</td>
             <td>{{ item.cajas_central }}</td>
-            <td>{{ item.stock_bsf }}</td>
-            <td>{{ item.stock_central }}</td>
             <td>{{ item.total_cajas }}</td>
         </tr>
 
@@ -60,41 +46,51 @@
 </table>
 </div>
 
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <button id="prevPage" type="button" class="btn btn-outline-secondary btn-sm">Anterior</button>
+    <span id="pageInfo" class="fw-semibold"></span>
+    <button id="nextPage" type="button" class="btn btn-outline-secondary btn-sm">Siguiente</button>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const rowsPerPage = 15;
+    const tbody = document.querySelector("#dataTable tbody");
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const prevBtn = document.getElementById("prevPage");
+    const nextBtn = document.getElementById("nextPage");
+    const pageInfo = document.getElementById("pageInfo");
 
-    const input = document.getElementById("searchInput");
-    const table = document.getElementById("dataTable");
-    const rows = table.getElementsByTagName("tr");
+    let currentPage = 1;
+    const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
 
-    input.addEventListener("keyup", function () {
+    function renderPage(page) {
+        currentPage = page;
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
 
-        const filter = input.value.toLowerCase().trim();
+        rows.forEach((row, index) => {
+            row.style.display = index >= start && index < end ? "" : "none";
+        });
 
-        if (filter === "") {
-            for (let i = 1; i < rows.length; i++) {
-                rows[i].style.display = "";
-            }
-            return;
-        }
+        pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+    }
 
-        for (let i = 1; i < rows.length; i++) {
-
-            const cells = rows[i].getElementsByTagName("td");
-            let match = false;
-
-            for (let j = 0; j < cells.length; j++) {
-                const text = (cells[j].textContent || "").toLowerCase();
-
-                if (text.includes(filter)) {
-                    match = true;
-                    break;
-                }
-            }
-
-            rows[i].style.display = match ? "" : "none";
+    prevBtn.addEventListener("click", function () {
+        if (currentPage > 1) {
+            renderPage(currentPage - 1);
         }
     });
+
+    nextBtn.addEventListener("click", function () {
+        if (currentPage < totalPages) {
+            renderPage(currentPage + 1);
+        }
+    });
+
+    renderPage(1);
 });
 </script>
 
