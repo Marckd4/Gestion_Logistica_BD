@@ -18,7 +18,6 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from . import views
-from django.contrib.auth import views as auth_views
 
 
 urlpatterns = [
@@ -30,7 +29,7 @@ urlpatterns = [
     path("exportar-resumen-excel/", views.exportar_resumen_excel, name="exportar_resumen_excel"), # exportar excel resumen 
     path("crear-usuario/", views.crear_usuario, name="crear_usuario"),
     path("dashboard/", views.dashboard, name="dashboard"),
-    path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
+    path('logout/', views.logout_usuario, name='logout'),
     path("login/", views.login_usuario, name="login"),
     path('pedidos/', include('pedidos.urls')),
     

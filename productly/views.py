@@ -183,11 +183,20 @@ def dashboard(request):
 
 # login usuario
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.messages import get_messages
 from django.views.decorators.cache import never_cache
+
+@login_required
+def logout_usuario(request):
+    storage = get_messages(request)
+    for _ in storage:
+        pass
+    logout(request)
+    return redirect('login')
+
 @never_cache
 def login_usuario(request):
     if request.method == "GET":

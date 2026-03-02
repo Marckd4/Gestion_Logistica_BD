@@ -1,7 +1,45 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div style="text-align: left;" class="mb-3">
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        border-bottom: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .table {
+        border: 1px solid #000 !important;
+    }
+    
+    .table th, .table td {
+        border: 1px solid #000 !important;
+    }
+    
+    .container {
+        max-width: 100% !important;
+    }
+}
+</style>
+
+<div style="text-align: left;" class="mb-3 no-print">
     <a href="{% url 'status_pedido' %}" class="btn-volver">⬅ Volver</a>
 </div>
 
@@ -19,8 +57,62 @@
         </div>
     </div>
 
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Datos del Cliente</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Cliente:</strong> {{ nota.cliente|default:"-" }}</p>
+                    <p class="mb-1"><strong>RUT:</strong> {{ nota.rut_cliente|default:"-" }}</p>
+                    <p class="mb-1"><strong>Giro:</strong> {{ nota.giro|default:"-" }}</p>
+                    <p class="mb-0"><strong>Teléfono:</strong> {{ nota.telefono|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Dirección de Entrega</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Dirección:</strong> {{ nota.direccion|default:"-" }}</p>
+                    <p class="mb-1"><strong>Comuna:</strong> {{ nota.comuna|default:"-" }}</p>
+                    <p class="mb-0"><strong>Ciudad:</strong> {{ nota.ciudad|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Programación de Entrega</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Lugar de Entrega:</strong> {{ nota.lugar_de_entrega|default:"-" }}</p>
+                    <p class="mb-1"><strong>Fecha:</strong> {{ nota.fecha_entrega|date:"d/m/Y"|default:"-" }}</p>
+                    <p class="mb-1"><strong>Hora:</strong> {{ nota.hora_entrega|time:"H:i"|default:"-" }}</p>
+                    <p class="mb-0"><strong>Persona Responsable:</strong> {{ nota.persona_responsable|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Forma de Pago</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0"><strong>Forma de Pago:</strong> {{ nota.forma_pago|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% if pendientes %}
-    <div class="alert alert-warning">
+    <div class="alert alert-warning no-print">
         <strong>Advertencia:</strong> Hay productos con stock insuficiente en Bodega Central.
         <ul class="mb-0 mt-2">
             {% for pendiente in pendientes %}
@@ -87,12 +179,27 @@
                 </table>
             </div>
 
-            <form method="post" class="mt-3">
+            <form method="post" class="mt-3 no-print">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-success" {% if pendientes %}disabled{% endif %}>Término de Picking</button>
             </form>
         </div>
     </div>
+
+    <div class="text-center mt-4 mb-4 no-print">
+        <button type="button" onclick="window.print()" class="btn btn-primary me-2">
+            Imprimir
+        </button>
+        <a href="{% url 'descargar_picking_pdf' nota.id %}" class="btn btn-secondary">
+            Descargar PDF
+        </a>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Script para manejar impresión
+});
+</script>
 
 {% endblock %}

@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from io import BytesIO
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
@@ -419,6 +420,128 @@ def crear_picking(request, nota_id):
             'pendientes': pendientes,
         },
     )
+
+
+@login_required
+def descargar_picking_pdf(request, nota_id):
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.units import inch
+    except ImportError:
+        messages.error(request, 'Librería reportlab no instalada. Ejecuta: pip install reportlab')
+        return redirect('crear_picking', nota_id=nota_id)
+
+    nota = get_object_or_404(
+        NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
+        id=nota_id,
+    )
+
+    plan, _ = _construir_plan_picking(nota)
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # Título
+    title = Paragraph(f"<b>Picking Nota de Venta #{nota.id}</b>", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 0.2 * inch))
+
+    # Datos básicos
+    basic_data = [
+        ['Cliente:', nota.cliente or '-', 'Vendedor:', nota.vendedor.username],
+        ['Fecha:', nota.fecha.strftime('%d/%m/%Y %H:%M') if nota.fecha else '-', '', '']
+    ]
+    basic_table = Table(basic_data, colWidths=[1.2*inch, 2.5*inch, 1.2*inch, 2*inch])
+    basic_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(basic_table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # Sección Cliente
+    elements.append(Paragraph("<b>Datos del Cliente</b>", styles['Heading3']))
+    cliente_data = [
+        ['RUT:', nota.rut_cliente or '-', 'Teléfono:', nota.telefono or '-'],
+        ['Giro:', nota.giro or '-', '', '']
+    ]
+    cliente_table = Table(cliente_data, colWidths=[1.2*inch, 2.5*inch, 1.2*inch, 2*inch])
+    cliente_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(cliente_table)
+    elements.append(Spacer(1, 0.2 * inch))
+
+    # Dirección
+    elements.append(Paragraph("<b>Dirección de Entrega</b>", styles['Heading3']))
+    direccion_data = [
+        ['Dirección:', nota.direccion or '-'],
+        ['Comuna:', nota.comuna or '-'],
+        ['Ciudad:', nota.ciudad or '-']
+    ]
+    dir_table = Table(direccion_data, colWidths=[1.2*inch, 5.5*inch])
+    dir_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(dir_table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # Tabla de productos
+    elements.append(Paragraph("<b>Ubicaciones asignadas para extracción</b>", styles['Heading3']))
+    
+    table_data = [['Cod.Sistema', 'Descripción', 'Cant.', 'Ubicación', 'Disp.', 'Extraer']]
+    
+    for item in plan:
+        if item['asignaciones']:
+            for asig in item['asignaciones']:
+                table_data.append([
+                    item['detalle'].codigo or '-',
+                    (item['detalle'].descripcion or '-')[:40],
+                    str(item['cantidad_requerida']),
+                    asig['ubicacion'],
+                    str(asig['cajas_disponibles']),
+                    str(asig['cajas_a_extraer'])
+                ])
+        else:
+            table_data.append([
+                item['detalle'].codigo or '-',
+                (item['detalle'].descripcion or '-')[:40],
+                str(item['cantidad_requerida']),
+                'Sin ubicación',
+                '0',
+                '0'
+            ])
+
+    productos_table = Table(table_data, colWidths=[1*inch, 2.5*inch, 0.6*inch, 1.2*inch, 0.6*inch, 0.7*inch])
+    productos_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(productos_table)
+
+    doc.build(elements)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="picking_nota_{nota_id}.pdf"'
+    return response
 
 
 @login_required

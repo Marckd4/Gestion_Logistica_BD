@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 django = "==5.2.7"
 pylint-django = "*"
+reportlab = "*"
 
 [dev-packages]
 
