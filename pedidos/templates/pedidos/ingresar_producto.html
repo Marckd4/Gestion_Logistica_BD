@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="text-align: left;">
+    <a href="{% url 'crear_nota' %}" class="btn-volver">⬅ Volver</a>
+</div>
+
+<div class="container mt-5">
+    <h2 class="mb-4">Ingresar Producto - Nota #{{ nota.id }}</h2>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Stock del Producto</h5>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="border rounded p-3 h-100">
+                        <h6 class="mb-2">Stock BSF</h6>
+                        <h4 class="mb-0" id="stock_bsf">0</h4>
+                        <small class="text-muted">cajas</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="border rounded p-3 h-100">
+                        <h6 class="mb-2">Stock Bodega Central</h6>
+                        <h4 class="mb-0" id="stock_central">0</h4>
+                        <small class="text-muted">cajas</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100 bg-light">
+                        <h6 class="mb-2">Stock Total</h6>
+                        <h4 class="mb-0 text-success" id="stock_total">0</h4>
+                        <small class="text-muted">cajas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Datos del Producto</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Cod_Sistema</label>
+                    <input type="text" id="id_cod_sistema" class="form-control" autocomplete="off">
+                    <small id="estado_producto" class="text-muted d-block mt-1"></small>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" id="id_descripcion" class="form-control" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Cod_Ean</label>
+                    <input type="text" id="id_cod_ean" class="form-control" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Cod_Dun</label>
+                    <input type="text" id="id_cod_dun" class="form-control" readonly>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cantidad Solicitada</label>
+                    <input type="number" id="id_cantidad_solicitada" class="form-control" min="1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Valor del Producto</label>
+                    <input type="number" id="id_valor_producto" class="form-control" min="0" step="0.01">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="button" id="btn_agregar_producto" class="btn btn-success w-100">Agregar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Productos Agregados</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Correlativo</th>
+                            <th>Cod_Sistema</th>
+                            <th>Descripción</th>
+                            <th>Cantidad Solicitada</th>
+                            <th>Valor del Producto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_productos_body">
+                        {% for d in detalles %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ d.codigo|default:"-" }}</td>
+                            <td>{{ d.descripcion }}</td>
+                            <td>{{ d.cantidad_solicitada }}</td>
+                            <td>{{ d.precio_x_caja }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mb-4">
+        <form method="post" action="{% url 'terminar_pedido' nota.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-lg">Terminar Pedido</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const codigoInput = document.getElementById("id_cod_sistema");
+    const descripcionInput = document.getElementById("id_descripcion");
+    const eanInput = document.getElementById("id_cod_ean");
+    const dunInput = document.getElementById("id_cod_dun");
+    const stockBsf = document.getElementById("stock_bsf");
+    const stockCentral = document.getElementById("stock_central");
+    const stockTotal = document.getElementById("stock_total");
+    const estado = document.getElementById("estado_producto");
+    const cantidadInput = document.getElementById("id_cantidad_solicitada");
+    const valorInput = document.getElementById("id_valor_producto");
+    const btnAgregar = document.getElementById("btn_agregar_producto");
+    const tablaBody = document.getElementById("tabla_productos_body");
+    const csrfToken = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
+
+    let debounceTimer = null;
+    let correlativo = {{ next_correlativo|default:1 }};
+
+    const actualizarStocks = (bsf, central, total) => {
+        stockBsf.textContent = bsf ?? 0;
+        stockCentral.textContent = central ?? 0;
+        stockTotal.textContent = total ?? 0;
+    };
+
+    const limpiarCampos = () => {
+        descripcionInput.value = "";
+        eanInput.value = "";
+        dunInput.value = "";
+        actualizarStocks(0, 0, 0);
+    };
+
+    const buscarProducto = async () => {
+        const codigo = codigoInput.value.trim();
+
+        if (!codigo) {
+            estado.textContent = "";
+            limpiarCampos();
+            return;
+        }
+
+        try {
+            estado.textContent = "Buscando producto...";
+            const params = new URLSearchParams();
+            params.set("cod_sistema", codigo);
+            params.set("_ts", Date.now().toString());
+
+            const response = await fetch(`{% url 'buscar_producto_por_codigo' %}?${params.toString()}`, {
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                estado.textContent = "No se pudo consultar el producto.";
+                limpiarCampos();
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!data.found) {
+                estado.textContent = "Producto no encontrado.";
+                limpiarCampos();
+                return;
+            }
+
+            descripcionInput.value = data.producto.descripcion || "";
+            eanInput.value = data.producto.cod_ean || "";
+            dunInput.value = data.producto.cod_dun || "";
+            actualizarStocks(data.stocks.bsf, data.stocks.central, data.stocks.total);
+            estado.textContent = "Producto encontrado.";
+        } catch (error) {
+            estado.textContent = "Error al consultar el producto.";
+            limpiarCampos();
+        }
+    };
+
+    codigoInput.addEventListener("input", function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(buscarProducto, 300);
+    });
+
+    codigoInput.addEventListener("blur", buscarProducto);
+
+    btnAgregar.addEventListener("click", async function () {
+        const codigo = codigoInput.value.trim();
+        const descripcion = descripcionInput.value.trim();
+        const cantidad = cantidadInput.value.trim();
+        const valor = valorInput.value.trim();
+
+        if (!codigo || !descripcion) {
+            estado.textContent = "Debes seleccionar un producto válido antes de agregar.";
+            return;
+        }
+
+        if (!cantidad || Number(cantidad) <= 0) {
+            estado.textContent = "Ingresa una cantidad solicitada válida.";
+            return;
+        }
+
+        if (!valor || Number(valor) < 0) {
+            estado.textContent = "Ingresa un valor de producto válido.";
+            return;
+        }
+
+        try {
+            btnAgregar.disabled = true;
+
+            const formData = new URLSearchParams();
+            formData.set("cod_sistema", codigo);
+            formData.set("descripcion", descripcion);
+            formData.set("cantidad", cantidad);
+            formData.set("valor", valor);
+
+            const response = await fetch(`{% url 'agregar_detalle_nota' nota.id %}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-CSRFToken": csrfToken || ""
+                },
+                body: formData.toString()
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                estado.textContent = data.message || "No se pudo guardar el producto.";
+                return;
+            }
+
+            const detalle = data.detalle;
+
+            const fila = document.createElement("tr");
+            fila.innerHTML = `
+                <td>${correlativo}</td>
+                <td>${detalle.codigo}</td>
+                <td>${detalle.descripcion}</td>
+                <td>${detalle.cantidad}</td>
+                <td>${detalle.valor}</td>
+            `;
+
+            tablaBody.appendChild(fila);
+            correlativo += 1;
+
+            codigoInput.value = "";
+            cantidadInput.value = "";
+            valorInput.value = "";
+            estado.textContent = data.message || "Producto agregado a la tabla.";
+            limpiarCampos();
+            codigoInput.focus();
+        } catch (error) {
+            estado.textContent = "Error al guardar el producto.";
+        } finally {
+            btnAgregar.disabled = false;
+        }
+    });
+});
+</script>
+
+{% endblock %}

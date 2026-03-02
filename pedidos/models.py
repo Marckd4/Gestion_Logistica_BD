@@ -14,6 +14,11 @@ class NotaVenta(models.Model):
         ('central', 'Bodega Central'),
     )
 
+    ESTADO_CHOICES = (
+        ('borrador', 'Borrador'),
+        ('finalizada', 'Finalizada'),
+    )
+
     fecha = models.DateTimeField(auto_now_add=True)
     vendedor = models.ForeignKey(User, on_delete=models.CASCADE)
 
@@ -42,6 +47,12 @@ class NotaVenta(models.Model):
         choices=BODEGA_CHOICES,
         blank=True,
         null=True
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='borrador'
     )
 
     # Totales
@@ -97,24 +108,19 @@ class DetalleNota(models.Model):
     importe_a_facturar = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
 
     def save(self, *args, **kwargs):
-
-        # Asegurar que precio_x_caja siempre sea Decimal
         if not isinstance(self.precio_x_caja, Decimal):
-            self.precio_x_caja = Decimal(str(self.precio_x_caja))
+            self.precio_x_caja = Decimal(str(self.precio_x_caja or "0"))
 
-        # Convertir capacidad a Decimal de forma segura
-        capacidad = Decimal(str(self.capacidad_x_caja)) if self.capacidad_x_caja else Decimal("0")
+        if not isinstance(self.precio_unitario, Decimal):
+            self.precio_unitario = Decimal(str(self.precio_unitario or "0"))
 
-        # Calcular precio unitario
-        if capacidad > 0:
-            self.precio_unitario = self.precio_x_caja / capacidad
-        else:
-            self.precio_unitario = Decimal("0.00")
+        if self.precio_unitario <= 0 and self.precio_x_caja > 0:
+            self.precio_unitario = self.precio_x_caja
 
-        # Calcular importe total
-        self.importe_a_facturar = (
-            self.precio_x_caja * Decimal(self.cantidad_solicitada)
-        )
+        if self.precio_x_caja <= 0 and self.precio_unitario > 0:
+            self.precio_x_caja = self.precio_unitario
+
+        self.importe_a_facturar = self.precio_unitario * Decimal(self.cantidad_solicitada)
 
         super().save(*args, **kwargs)
 

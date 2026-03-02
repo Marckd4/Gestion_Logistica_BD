@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+
+<style>
+.nota-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.data-label {
+    color: #495057;
+    font-weight: 600;
+}
+
+.data-value {
+    color: #212529;
+}
+
+.fact-box {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 14px;
+    height: 100%;
+    background: #fff;
+}
+
+.fact-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #1f2d3d;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 8px;
+}
+
+.fact-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    column-gap: 12px;
+    padding: 4px 0;
+    align-items: start;
+}
+
+.fact-key {
+    color: #495057;
+    font-weight: 600;
+}
+
+.fact-val {
+    color: #212529;
+    word-break: break-word;
+}
+
+.table-nota {
+    min-width: 1250px;
+}
+
+.table-nota th,
+.table-nota td {
+    vertical-align: middle;
+}
+
+.col-nowrap {
+    white-space: nowrap;
+}
+
+.col-wrap {
+    white-space: normal;
+    word-break: break-word;
+    min-width: 260px;
+}
+
+.col-number {
+    text-align: right;
+    white-space: nowrap;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    .table-nota {
+        min-width: 100% !important;
+    }
+
+    .fact-box {
+        border: 1px solid #000 !important;
+    }
+}
+</style>
+
+<div class="container-fluid mt-4 nota-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <a href="{% url 'status_pedido' %}" class="btn btn-secondary">⬅ Volver</a>
+        <button type="button" class="btn btn-primary" onclick="window.print()">Imprimir</button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Nota de Venta #{{ nota.id }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="fact-box">
+                        <div class="fact-title">Datos del Cliente</div>
+
+                        <div class="fact-row">
+                            <div class="fact-key">Cliente</div>
+                            <div class="fact-val">{{ nota.cliente|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">RUT</div>
+                            <div class="fact-val">{{ nota.rut_cliente|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Giro</div>
+                            <div class="fact-val">{{ nota.giro|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Teléfono</div>
+                            <div class="fact-val">{{ nota.telefono|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Dirección</div>
+                            <div class="fact-val">{{ nota.direccion|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Comuna / Ciudad</div>
+                            <div class="fact-val">{{ nota.comuna|default:"-" }} / {{ nota.ciudad|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="fact-box">
+                        <div class="fact-title">Datos del Documento y Entrega</div>
+
+                        <div class="fact-row">
+                            <div class="fact-key">Número de Nota</div>
+                            <div class="fact-val">#{{ nota.id }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Fecha</div>
+                            <div class="fact-val">{{ nota.fecha|date:"d/m/Y H:i" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Usuario/Vendedor</div>
+                            <div class="fact-val">{{ nota.vendedor.username }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Estado</div>
+                            <div class="fact-val">{{ nota.get_estado_display }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Forma de Pago</div>
+                            <div class="fact-val">{{ nota.forma_pago|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Lugar de Entrega</div>
+                            <div class="fact-val">{{ nota.lugar_de_entrega|default:"-" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Fecha / Hora Entrega</div>
+                            <div class="fact-val">{{ nota.fecha_entrega|date:"d/m/Y"|default:"-" }} {{ nota.hora_entrega|time:"H:i"|default:"" }}</div>
+                        </div>
+                        <div class="fact-row">
+                            <div class="fact-key">Persona Responsable</div>
+                            <div class="fact-val">{{ nota.persona_responsable|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Productos de la Nota</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm table-nota mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="col-nowrap">#</th>
+                            <th class="col-nowrap">Cod_Sistema</th>
+                            <th class="col-wrap">Descripción</th>
+                            <th class="col-nowrap">Cod_Ean</th>
+                            <th class="col-nowrap">Cod_Dun</th>
+                            <th class="col-nowrap">Formato</th>
+                            <th class="col-number">Cantidad</th>
+                            <th class="col-number">Valor unitario</th>
+                            <th class="col-number">Total por producto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in detalles %}
+                        <tr>
+                            <td class="col-nowrap">{{ forloop.counter }}</td>
+                            <td class="col-nowrap">{{ d.codigo|default:"-" }}</td>
+                            <td class="col-wrap">{{ d.descripcion|default:"-" }}</td>
+                            <td class="col-nowrap">{{ d.ean|default:"-" }}</td>
+                            <td class="col-nowrap">{{ d.dun|default:"-" }}</td>
+                            <td class="col-nowrap">{{ d.formato_venta|default:"-" }}</td>
+                            <td class="col-number">{{ d.cantidad_solicitada }}</td>
+                            <td class="col-number">${{ d.precio_unitario|floatformat:2|intcomma }}</td>
+                            <td class="col-number">${{ d.importe_a_facturar|floatformat:0|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">No hay productos registrados en esta nota.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row g-2 justify-content-end">
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="d-flex justify-content-between border rounded p-2">
+                        <strong>Neto</strong>
+                        <span>${{ nota.neto|floatformat:0|intcomma }}</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="d-flex justify-content-between border rounded p-2">
+                        <strong>IVA</strong>
+                        <span>${{ nota.iva|floatformat:0|intcomma }}</span>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-12">
+                    <div class="d-flex justify-content-between border rounded p-2 bg-light">
+                        <strong>Total general</strong>
+                        <span class="text-success fw-bold">${{ total_general|floatformat:0|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
