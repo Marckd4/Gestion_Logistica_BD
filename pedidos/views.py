@@ -425,6 +425,9 @@ def crear_picking(request, nota_id):
 @login_required
 @login_required
 def descargar_picking_pdf(request, nota_id):
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import letter
@@ -432,124 +435,142 @@ def descargar_picking_pdf(request, nota_id):
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import inch
     except ImportError as e:
+        logger.error(f'Error importando reportlab: {str(e)}')
         return HttpResponse(
-            f'Error: Librería reportlab no instalada. {str(e)}',
+            'Error: reportlab no está instalado en el servidor.',
             content_type='text/plain',
             status=500
         )
 
-    nota = get_object_or_404(
-        NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
-        id=nota_id,
-    )
+    try:
+        nota = get_object_or_404(
+            NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
+            id=nota_id,
+        )
+    except Exception as e:
+        logger.error(f'Error obteniendo nota {nota_id}: {str(e)}')
+        return HttpResponse(
+            'Error: No se encontró la nota de venta.',
+            content_type='text/plain',
+            status=404
+        )
 
-    plan, _ = _construir_plan_picking(nota)
+    try:
+        plan, _ = _construir_plan_picking(nota)
 
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    elements = []
-    styles = getSampleStyleSheet()
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
 
-    # Título
-    title = Paragraph(f"<b>Picking Nota de Venta #{nota.id}</b>", styles['Title'])
-    elements.append(title)
-    elements.append(Spacer(1, 0.2 * inch))
+        # Título
+        title = Paragraph(f"<b>Picking Nota de Venta #{nota.id}</b>", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 0.2 * inch))
 
-    # Datos básicos
-    basic_data = [
-        ['Cliente:', nota.cliente or '-', 'Vendedor:', nota.vendedor.username],
-        ['Fecha:', nota.fecha.strftime('%d/%m/%Y %H:%M') if nota.fecha else '-', '', '']
-    ]
-    basic_table = Table(basic_data, colWidths=[1.2*inch, 2.5*inch, 1.2*inch, 2*inch])
-    basic_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
-    elements.append(basic_table)
-    elements.append(Spacer(1, 0.3 * inch))
+        # Datos básicos
+        basic_data = [
+            ['Cliente:', nota.cliente or '-', 'Vendedor:', nota.vendedor.username],
+            ['Fecha:', nota.fecha.strftime('%d/%m/%Y %H:%M') if nota.fecha else '-', '', '']
+        ]
+        basic_table = Table(basic_data, colWidths=[1.2*inch, 2.5*inch, 1.2*inch, 2*inch])
+        basic_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        elements.append(basic_table)
+        elements.append(Spacer(1, 0.3 * inch))
 
-    # Sección Cliente
-    elements.append(Paragraph("<b>Datos del Cliente</b>", styles['Heading3']))
-    cliente_data = [
-        ['RUT:', nota.rut_cliente or '-', 'Teléfono:', nota.telefono or '-'],
-        ['Giro:', nota.giro or '-', '', '']
-    ]
-    cliente_table = Table(cliente_data, colWidths=[1.2*inch, 2.5*inch, 1.2*inch, 2*inch])
-    cliente_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
-    ]))
-    elements.append(cliente_table)
-    elements.append(Spacer(1, 0.2 * inch))
+        # Sección Cliente
+        elements.append(Paragraph("<b>Datos del Cliente</b>", styles['Heading3']))
+        cliente_data = [
+            ['RUT:', nota.rut_cliente or '-', 'Teléfono:', nota.telefono or '-'],
+            ['Giro:', nota.giro or '-', '', '']
+        ]
+        cliente_table = Table(cliente_data, colWidths=[1.2*inch, 2.5*inch, 1.2*inch, 2*inch])
+        cliente_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(cliente_table)
+        elements.append(Spacer(1, 0.2 * inch))
 
-    # Dirección
-    elements.append(Paragraph("<b>Dirección de Entrega</b>", styles['Heading3']))
-    direccion_data = [
-        ['Dirección:', nota.direccion or '-'],
-        ['Comuna:', nota.comuna or '-'],
-        ['Ciudad:', nota.ciudad or '-']
-    ]
-    dir_table = Table(direccion_data, colWidths=[1.2*inch, 5.5*inch])
-    dir_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
-    ]))
-    elements.append(dir_table)
-    elements.append(Spacer(1, 0.3 * inch))
+        # Dirección
+        elements.append(Paragraph("<b>Dirección de Entrega</b>", styles['Heading3']))
+        direccion_data = [
+            ['Dirección:', nota.direccion or '-'],
+            ['Comuna:', nota.comuna or '-'],
+            ['Ciudad:', nota.ciudad or '-']
+        ]
+        dir_table = Table(direccion_data, colWidths=[1.2*inch, 5.5*inch])
+        dir_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(dir_table)
+        elements.append(Spacer(1, 0.3 * inch))
 
-    # Tabla de productos
-    elements.append(Paragraph("<b>Ubicaciones asignadas para extracción</b>", styles['Heading3']))
-    
-    table_data = [['Cod.Sistema', 'Descripción', 'Cant.', 'Ubicación', 'Disp.', 'Extraer']]
-    
-    for item in plan:
-        if item['asignaciones']:
-            for asig in item['asignaciones']:
+        # Tabla de productos
+        elements.append(Paragraph("<b>Ubicaciones asignadas para extracción</b>", styles['Heading3']))
+        
+        table_data = [['Cod.Sistema', 'Descripción', 'Cant.', 'Ubicación', 'Disp.', 'Extraer']]
+        
+        for item in plan:
+            if item['asignaciones']:
+                for asig in item['asignaciones']:
+                    table_data.append([
+                        item['detalle'].codigo or '-',
+                        (item['detalle'].descripcion or '-')[:40],
+                        str(item['cantidad_requerida']),
+                        asig['ubicacion'],
+                        str(asig['cajas_disponibles']),
+                        str(asig['cajas_a_extraer'])
+                    ])
+            else:
                 table_data.append([
                     item['detalle'].codigo or '-',
                     (item['detalle'].descripcion or '-')[:40],
                     str(item['cantidad_requerida']),
-                    asig['ubicacion'],
-                    str(asig['cajas_disponibles']),
-                    str(asig['cajas_a_extraer'])
+                    'Sin ubicación',
+                    '0',
+                    '0'
                 ])
-        else:
-            table_data.append([
-                item['detalle'].codigo or '-',
-                (item['detalle'].descripcion or '-')[:40],
-                str(item['cantidad_requerida']),
-                'Sin ubicación',
-                '0',
-                '0'
-            ])
 
-    productos_table = Table(table_data, colWidths=[1*inch, 2.5*inch, 0.6*inch, 1.2*inch, 0.6*inch, 0.7*inch])
-    productos_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('FONTSIZE', (0, 1), (-1, -1), 7),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-    ]))
-    elements.append(productos_table)
+        productos_table = Table(table_data, colWidths=[1*inch, 2.5*inch, 0.6*inch, 1.2*inch, 0.6*inch, 0.7*inch])
+        productos_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        elements.append(productos_table)
 
-    doc.build(elements)
-    
-    buffer.seek(0)
-    response = HttpResponse(buffer.read(), content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="picking_nota_{nota_id}.pdf"'
-    response['Content-Type'] = 'application/pdf'
-    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response['Pragma'] = 'no-cache'
-    response['Expires'] = '0'
-    return response
+        doc.build(elements)
+        
+        buffer.seek(0)
+        response = HttpResponse(buffer.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="picking_nota_{nota_id}.pdf"'
+        response['Content-Type'] = 'application/pdf'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+        
+    except Exception as e:
+        logger.error(f'Error generando PDF para nota {nota_id}: {str(e)}', exc_info=True)
+        return HttpResponse(
+            f'Error al generar el PDF: {str(e)}',
+            content_type='text/plain',
+            status=500
+        )
 
 
 @login_required
