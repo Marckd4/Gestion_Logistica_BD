@@ -516,13 +516,15 @@ def descargar_picking_pdf(request, nota_id):
         # Tabla de productos
         elements.append(Paragraph("<b>Ubicaciones asignadas para extracción</b>", styles['Heading3']))
         
-        table_data = [['Cod.Sistema', 'Descripción', 'Cant.', 'Ubicación', 'Disp.', 'Extraer']]
+        table_data = [['Cod.Sistema', 'Cod EAN', 'Cod DUN', 'Descripción', 'Cant.', 'Ubicación', 'Disp.', 'Extraer']]
         
         for item in plan:
             if item['asignaciones']:
                 for asig in item['asignaciones']:
                     table_data.append([
                         item['detalle'].codigo or '-',
+                        item['detalle'].ean or '-',
+                        item['detalle'].dun or '-',
                         (item['detalle'].descripcion or '-')[:40],
                         str(item['cantidad_requerida']),
                         asig['ubicacion'],
@@ -532,6 +534,8 @@ def descargar_picking_pdf(request, nota_id):
             else:
                 table_data.append([
                     item['detalle'].codigo or '-',
+                    item['detalle'].ean or '-',
+                    item['detalle'].dun or '-',
                     (item['detalle'].descripcion or '-')[:40],
                     str(item['cantidad_requerida']),
                     'Sin ubicación',
@@ -539,7 +543,7 @@ def descargar_picking_pdf(request, nota_id):
                     '0'
                 ])
 
-        productos_table = Table(table_data, colWidths=[1*inch, 2.5*inch, 0.6*inch, 1.2*inch, 0.6*inch, 0.7*inch])
+        productos_table = Table(table_data, colWidths=[0.9*inch, 1.1*inch, 1.1*inch, 2.2*inch, 0.5*inch, 1.1*inch, 0.5*inch, 0.6*inch])
         productos_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
