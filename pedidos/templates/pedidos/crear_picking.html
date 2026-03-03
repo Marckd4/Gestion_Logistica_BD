@@ -190,13 +190,45 @@
         <button type="button" onclick="window.print()" class="btn btn-primary me-2">
             Imprimir
         </button>
-        <a href="{% url 'descargar_picking_pdf' nota.id %}" class="btn btn-secondary">
+        <button type="button" class="btn btn-secondary" onclick="descargarPDF({{ nota.id }})">
             Descargar PDF
-        </a>
+        </button>
     </div>
 </div>
 
 <script>
+function descargarPDF(notaId) {
+    const url = `{% url 'descargar_picking_pdf' 0 %}`.replace('0', notaId);
+    
+    // Crear un enlace temporal para descargar
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error en descarga: ${response.status}`);
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Crear un objeto URL para el blob
+            const urlBlob = window.URL.createObjectURL(blob);
+            
+            // Crear un enlace temporal e iniciar descarga
+            const agreLink = document.createElement('a');
+            agreLink.href = urlBlob;
+            agreLink.download = `picking_nota_${notaId}.pdf`;
+            document.body.appendChild(agreLink);
+            agreLink.click();
+            
+            // Limpiar
+            document.body.removeChild(agreLink);
+            window.URL.revokeObjectURL(urlBlob);
+        })
+        .catch(error => {
+            console.error('Error descargando PDF:', error);
+            alert('Error al descargar el PDF. Intenta nuevamente.');
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Script para manejar impresión
 });
