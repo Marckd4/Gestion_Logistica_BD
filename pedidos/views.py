@@ -423,6 +423,7 @@ def crear_picking(request, nota_id):
 
 
 @login_required
+@login_required
 def descargar_picking_pdf(request, nota_id):
     try:
         from reportlab.lib import colors
@@ -430,9 +431,12 @@ def descargar_picking_pdf(request, nota_id):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import inch
-    except ImportError:
-        messages.error(request, 'Librería reportlab no instalada. Ejecuta: pip install reportlab')
-        return redirect('crear_picking', nota_id=nota_id)
+    except ImportError as e:
+        return HttpResponse(
+            f'Error: Librería reportlab no instalada. {str(e)}',
+            content_type='text/plain',
+            status=500
+        )
 
     nota = get_object_or_404(
         NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
@@ -541,6 +545,10 @@ def descargar_picking_pdf(request, nota_id):
     buffer.seek(0)
     response = HttpResponse(buffer.read(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="picking_nota_{nota_id}.pdf"'
+    response['Content-Type'] = 'application/pdf'
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
     return response
 
 

@@ -199,16 +199,39 @@
 <script>
 function descargarPDF(notaId) {
     const url = `{% url 'descargar_picking_pdf' 0 %}`.replace('0', notaId);
+    const btnDownload = event.target;
+    const btnText = btnDownload.textContent;
+    
+    // Feedback visual: cambiar texto del botón
+    btnDownload.disabled = true;
+    btnDownload.textContent = 'Descargando...';
     
     // Crear un enlace temporal para descargar
-    fetch(url)
+    fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin', // Incluir cookies de sesión
+        headers: {
+            'Accept': 'application/pdf',
+        }
+    })
         .then(response => {
-            if (!response.ok) {
-                throw new Error(`Error en descarga: ${response.status}`);
+            // Verificar si hay redirección (302, etc)
+            if (response.status >= 300 && response.status < 400) {
+                throw new Error(`Error de redirección: ${response.status}. Posiblemente sesión expirada.`);
             }
+            
+            if (!response.ok) {
+                throw new Error(`Error en descarga: ${response.status} ${response.statusText}`);
+            }
+            
             return response.blob();
         })
         .then(blob => {
+            // Verificar que sea un PDF válido
+            if (blob.type !== 'application/pdf') {
+                throw new Error('La respuesta no es un PDF válido');
+            }
+            
             // Crear un objeto URL para el blob
             const urlBlob = window.URL.createObjectURL(blob);
             
@@ -222,10 +245,18 @@ function descargarPDF(notaId) {
             // Limpiar
             document.body.removeChild(agreLink);
             window.URL.revokeObjectURL(urlBlob);
+            
+            // Restaurar botón
+            btnDownload.disabled = false;
+            btnDownload.textContent = btnText;
         })
         .catch(error => {
             console.error('Error descargando PDF:', error);
-            alert('Error al descargar el PDF. Intenta nuevamente.');
+            alert(`Error al descargar el PDF: ${error.message}`);
+            
+            // Restaurar botón
+            btnDownload.disabled = false;
+            btnDownload.textContent = btnText;
         });
 }
 
