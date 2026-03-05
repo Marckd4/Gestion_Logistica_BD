@@ -80,6 +80,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'pedidos.middleware.UserActivityMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'auditlog.middleware.AuditlogMiddleware',
@@ -190,8 +191,8 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
 # --- Control de Sesión ---
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra al cerrar navegador
-SESSION_COOKIE_AGE = 3600  # 1 hora por si acaso
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Mantener sesión incluso al cerrar navegador
+SESSION_COOKIE_AGE = 28800  # 8 horas (28800 segundos)
 
 # Evita que apps externas usen la cookie
 CSRF_COOKIE_SAMESITE = "Lax"

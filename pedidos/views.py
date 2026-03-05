@@ -14,9 +14,10 @@ from django.db.models.functions import Coalesce
 from django.db import transaction
 from decimal import Decimal, ROUND_HALF_UP
 from decimal import InvalidOperation
+from functools import wraps
 
 from .forms import NotaVentaForm, DetalleNotaFormSet
-from .models import NotaVenta, DetalleNota
+from .models import NotaVenta, DetalleNota, UserModulePermission, QuiebresStock
 from bodegabsf.models import Bsf
 from bodegacentral.models import Central
 
@@ -40,8 +41,46 @@ def _json_no_cache(payload):
     return response
 
 
+def _user_has_module_permission(user, module, action):
+    if user.is_superuser:
+        return True
+
+    permiso = UserModulePermission.objects.filter(user=user, module=module).first()
+    if not permiso:
+        return False
+
+    permisos = {
+        'view': permiso.can_view,
+        'create': permiso.can_create,
+        'edit': permiso.can_edit,
+        'delete': permiso.can_delete,
+        'export': permiso.can_export,
+        'report': permiso.can_report,
+    }
+    return permisos.get(action, False)
+
+
+def require_module_permission(module, action):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            if _user_has_module_permission(request.user, module, action):
+                return view_func(request, *args, **kwargs)
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return _json_no_cache({'ok': False, 'message': 'No tienes permisos para esta acción.'})
+
+            messages.error(request, 'No tienes permisos para esta acción en este módulo.')
+            return redirect('inicio')
+
+        return _wrapped_view
+
+    return decorator
+
+
 @login_required
 @require_GET
+@require_module_permission('pedidos', 'view')
 def buscar_cliente_por_rut(request):
     rut = request.GET.get("rut", "")
     nombre = request.GET.get("nombre", "").strip()
@@ -96,6 +135,7 @@ def buscar_cliente_por_rut(request):
 # ==============================
 
 @login_required
+@require_module_permission('pedidos', 'create')
 def crear_nota(request):
     if request.method == 'POST':
         form = NotaVentaForm(request.POST)
@@ -112,8 +152,15 @@ def crear_nota(request):
 
 
 @login_required
+@require_module_permission('pedidos', 'view')
 def ingresar_producto(request, nota_id):
     nota = get_object_or_404(NotaVenta, id=nota_id)
+    
+    # Validar que la nota esté en estado "borrador" (recién creada)
+    if nota.estado != 'borrador':
+        messages.error(request, "Esta nota ya ha sido finalizada y no puede ser modificada. Crea una nueva nota.")
+        return redirect('crear_nota')
+    
     detalles = nota.detalles.all().order_by('id')
     return render(
         request,
@@ -128,6 +175,7 @@ def ingresar_producto(request, nota_id):
 
 @login_required
 @require_POST
+@require_module_permission('pedidos', 'create')
 def agregar_detalle_nota(request, nota_id):
     nota = get_object_or_404(NotaVenta, id=nota_id)
 
@@ -191,6 +239,7 @@ def agregar_detalle_nota(request, nota_id):
             'ok': True,
             'message': 'Producto guardado correctamente.',
             'detalle': {
+                'id': detalle.id,
                 'codigo': detalle.codigo or '',
                 'descripcion': detalle.descripcion or '',
                 'cantidad': detalle.cantidad_solicitada,
@@ -202,6 +251,64 @@ def agregar_detalle_nota(request, nota_id):
 
 @login_required
 @require_POST
+@require_module_permission('pedidos', 'delete')
+def eliminar_detalle_nota(request, nota_id, detalle_id):
+    nota = get_object_or_404(NotaVenta, id=nota_id)
+    detalle = get_object_or_404(DetalleNota, id=detalle_id, nota=nota)
+    
+    detalle.delete()
+    nota.calcular_totales()
+    
+    return _json_no_cache({
+        'ok': True,
+        'message': 'Producto eliminado correctamente.'
+    })
+
+
+@login_required
+@require_POST
+@require_module_permission('pedidos', 'edit')
+def editar_detalle_nota(request, nota_id, detalle_id):
+    nota = get_object_or_404(NotaVenta, id=nota_id)
+    detalle = get_object_or_404(DetalleNota, id=detalle_id, nota=nota)
+    
+    cantidad_raw = request.POST.get('cantidad', '').strip()
+    valor_raw = request.POST.get('valor', '').strip()
+    
+    try:
+        cantidad = int(cantidad_raw)
+        if cantidad <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return _json_no_cache({'ok': False, 'message': 'Cantidad inválida.'})
+    
+    try:
+        valor = Decimal(valor_raw)
+        if valor < 0:
+            raise InvalidOperation
+    except (TypeError, InvalidOperation, ValueError):
+        return _json_no_cache({'ok': False, 'message': 'Valor inválido.'})
+    
+    detalle.cantidad_solicitada = cantidad
+    detalle.precio_x_caja = valor
+    detalle.precio_unitario = valor
+    detalle.save()
+    
+    nota.calcular_totales()
+    
+    return _json_no_cache({
+        'ok': True,
+        'message': 'Producto actualizado correctamente.',
+        'detalle': {
+            'cantidad': detalle.cantidad_solicitada,
+            'valor': str(detalle.precio_x_caja),
+        }
+    })
+
+
+@login_required
+@require_POST
+@require_module_permission('pedidos', 'edit')
 def terminar_pedido(request, nota_id):
     nota = get_object_or_404(NotaVenta, id=nota_id)
     nota.estado = 'finalizada'
@@ -266,6 +373,7 @@ def _exportar_notas_excel(notas):
 
 
 @login_required
+@require_module_permission('pedidos', 'view')
 def status_pedido(request):
     if request.method == 'POST':
         accion = request.POST.get('accion', '').strip()
@@ -326,6 +434,7 @@ def _buscar_ubicaciones_central_para_detalle(detalle):
 def _construir_plan_picking(nota, bloquear=False):
     detalles_plan = []
     pendientes = []
+    stock_virtual = {}
 
     for detalle in nota.detalles.all().order_by('id'):
         cantidad_requerida = int(detalle.cantidad_solicitada or 0)
@@ -337,7 +446,8 @@ def _construir_plan_picking(nota, bloquear=False):
 
         asignaciones = []
         for item in ubicaciones_qs:
-            cajas_disponibles = int(item.cajas or 0)
+            cajas_actuales = int(item.cajas or 0)
+            cajas_disponibles = stock_virtual.get(item.id, cajas_actuales)
             if cajas_disponibles <= 0:
                 continue
 
@@ -356,6 +466,7 @@ def _construir_plan_picking(nota, bloquear=False):
                 }
             )
             faltante -= extraer
+            stock_virtual[item.id] = cajas_disponibles - extraer
 
             if faltante <= 0:
                 break
@@ -377,36 +488,82 @@ def _construir_plan_picking(nota, bloquear=False):
 
 
 @login_required
+@require_module_permission('pedidos', 'edit')
 def crear_picking(request, nota_id):
+    # LAYER 1: Entry-level validation
     nota = get_object_or_404(
         NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
         id=nota_id,
     )
-
+    
+    if nota.estado == 'despachada':
+        messages.error(request, f"La Nota #{nota_id} ya fue procesada. No se puede ejecutar picking nuevamente.")
+        return redirect('status_pedido')
+    
     if request.method == 'POST':
+        # LAYER 2: Pre-POST validation (refresh to check for race conditions)
+        nota.refresh_from_db()
+        if nota.estado == 'despachada':
+            messages.error(request, f"La Nota #{nota_id} fue procesada por otro usuario. No se puede procesar nuevamente.")
+            return redirect('status_pedido')
+
+        # LAYER 3: Database-level locking with pessimistic lock
         with transaction.atomic():
             nota_bloqueada = get_object_or_404(
-                NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
+                NotaVenta.objects.select_related('vendedor').prefetch_related('detalles').select_for_update(),
                 id=nota_id,
             )
+            
+            # Triple-check within the transaction
+            if nota_bloqueada.estado == 'despachada':
+                messages.error(request, f"La Nota #{nota_id} ya fue despachada. Operación cancelada.")
+                return redirect('status_pedido')
+            
             plan, pendientes = _construir_plan_picking(nota_bloqueada, bloquear=True)
 
-            if pendientes:
-                messages.error(
-                    request,
-                    'No se pudo finalizar picking por stock insuficiente: ' + '; '.join(pendientes),
-                )
-                return redirect('crear_picking', nota_id=nota_id)
-
+            # Procesar asignaciones y registrar quiebres
+            quiebres_registrados = []
+            
             for detalle_plan in plan:
+                detalle = detalle_plan['detalle']
+                cantidad_requerida = detalle_plan['cantidad_requerida']
+                faltante = detalle_plan['faltante']
+                
+                # Restar del stock lo que se pudo encontrar
                 for asignacion in detalle_plan['asignaciones']:
                     central = Central.objects.get(id=asignacion['central_id'])
                     cajas_actuales = int(central.cajas or 0)
                     nuevas_cajas = max(cajas_actuales - int(asignacion['cajas_a_extraer']), 0)
                     central.cajas = nuevas_cajas
                     central.save(update_fields=['cajas'])
+                
+                # Registrar quiebre si hay faltante
+                if faltante > 0:
+                    cantidad_entregada = cantidad_requerida - faltante
+                    quiebre = QuiebresStock.objects.create(
+                        nota=nota_bloqueada,
+                        detalle=detalle,
+                        codigo=detalle.codigo or '',
+                        descripcion=detalle.descripcion,
+                        cantidad_solicitada=cantidad_requerida,
+                        cantidad_entregada=cantidad_entregada,
+                        cantidad_faltante=faltante
+                    )
+                    quiebres_registrados.append(quiebre)
 
-        messages.success(request, f"Picking finalizado para la Nota #{nota_id}.")
+            # Marcar la nota como despachada después de completar el picking
+            nota_bloqueada.estado = 'despachada'
+            nota_bloqueada.save(update_fields=['estado'])
+            
+            # Mensaje de éxito
+            if quiebres_registrados:
+                messages.success(
+                    request,
+                    f"Picking finalizado. Se registraron {len(quiebres_registrados)} producto(s) con quiebre de stock."
+                )
+            else:
+                messages.success(request, f"Picking finalizado para la Nota #{nota_id}.")
+        
         return redirect('status_pedido')
 
     plan, pendientes = _construir_plan_picking(nota)
@@ -418,12 +575,13 @@ def crear_picking(request, nota_id):
             'nota': nota,
             'plan_picking': plan,
             'pendientes': pendientes,
+                   'nota_despachada': nota.estado == 'despachada',
         },
     )
 
 
 @login_required
-@login_required
+@require_module_permission('pedidos', 'export')
 def descargar_picking_pdf(request, nota_id):
     import logging
     logger = logging.getLogger(__name__)
@@ -578,6 +736,7 @@ def descargar_picking_pdf(request, nota_id):
 
 
 @login_required
+@require_module_permission('pedidos', 'edit')
 def editar_nota(request, nota_id):
     nota = get_object_or_404(NotaVenta, id=nota_id)
 
@@ -587,6 +746,13 @@ def editar_nota(request, nota_id):
 
         if form.is_valid() and formset.is_valid():
             nota_actualizada = form.save()
+            
+            # Si la nota estaba finalizada o despachada, reabrirla a estado "borrador"
+            if nota_actualizada.estado in ['finalizada', 'despachada']:
+                nota_actualizada.estado = 'borrador'
+                nota_actualizada.save(update_fields=['estado'])
+                messages.info(request, f"La Nota #{nota_actualizada.id} ha sido reabierta para edición.")
+            
             detalles = formset.save(commit=False)
 
             for detalle_eliminado in formset.deleted_objects:
@@ -617,6 +783,7 @@ def editar_nota(request, nota_id):
 
 
 @login_required
+@require_module_permission('pedidos', 'view')
 def ver_nota_venta(request, nota_id):
     nota = get_object_or_404(
         NotaVenta.objects.select_related('vendedor').prefetch_related('detalles'),
@@ -668,6 +835,7 @@ def ver_nota_venta(request, nota_id):
 
 @login_required
 @require_GET
+@require_module_permission('pedidos', 'view')
 def buscar_producto_por_codigo(request):
     codigo = request.GET.get("cod_sistema", "").strip()
 
@@ -680,6 +848,8 @@ def buscar_producto_por_codigo(request):
                     "bsf": 0,
                     "central": 0,
                     "total": 0,
+                    "reserva": 0,
+                    "disponible": 0,
                 },
             }
         )
@@ -697,6 +867,14 @@ def buscar_producto_por_codigo(request):
     stock_central = central_qs.aggregate(total=Coalesce(Sum("cajas"), 0))["total"] or 0
     stock_total = stock_bsf + stock_central
 
+    # Calcular stock en reserva (notas en estado borrador y finalizada, excluyendo despachadas)
+    stock_reserva = DetalleNota.objects.filter(
+        codigo__iexact=codigo,
+        nota__estado__in=['borrador', 'finalizada']
+    ).aggregate(total=Coalesce(Sum("cantidad_solicitada"), 0))["total"] or 0
+
+    stock_disponible = stock_total - stock_reserva
+
     producto = bsf_qs.first() or central_qs.first()
 
     if not producto:
@@ -708,6 +886,8 @@ def buscar_producto_por_codigo(request):
                     "bsf": 0,
                     "central": 0,
                     "total": 0,
+                    "reserva": 0,
+                    "disponible": 0,
                 },
             }
         )
@@ -725,6 +905,180 @@ def buscar_producto_por_codigo(request):
                 "bsf": stock_bsf,
                 "central": stock_central,
                 "total": stock_total,
+                "reserva": stock_reserva,
+                "disponible": stock_disponible,
             },
         }
     )
+
+
+# ==============================
+# QUIEBRE DE STOCK
+# ==============================
+
+@login_required
+@require_GET
+@require_module_permission('pedidos', 'view')
+def listar_quiebres_stock(request):
+    """
+    Vista que lista todos los productos con quiebre de stock
+    """
+    quiebres = QuiebresStock.objects.select_related('nota', 'detalle').order_by('-fecha_registro')
+    
+    # Filtros opcionales
+    codigo = request.GET.get('codigo', '').strip()
+    if codigo:
+        quiebres = quiebres.filter(codigo__icontains=codigo)
+    
+    descripcion = request.GET.get('descripcion', '').strip()
+    if descripcion:
+        quiebres = quiebres.filter(descripcion__icontains=descripcion)
+    
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    if fecha_desde:
+        try:
+            from datetime import datetime
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            quiebres = quiebres.filter(fecha_registro__gte=fecha_desde_dt)
+        except ValueError:
+            pass
+    
+    # Paginación
+    paginator = Paginator(quiebres, 20)
+    page_number = request.GET.get('page')
+    quiebres_page = paginator.get_page(page_number)
+    
+    # Estadísticas
+    total_quiebres = quiebres.count()
+    total_cajas_faltantes = quiebres.aggregate(total=Coalesce(Sum("cantidad_faltante"), 0))["total"] or 0
+    
+    context = {
+        'quiebres': quiebres_page,
+        'total_quiebres': total_quiebres,
+        'total_cajas_faltantes': total_cajas_faltantes,
+    }
+    
+    return render(request, 'pedidos/quiebres_stock.html', context)
+
+
+@login_required
+@require_GET
+@require_module_permission('pedidos', 'view')
+def obtener_estadisticas_quiebres(request):
+    """
+    API para obtener estadísticas de quiebres de stock
+    """
+    total_quiebres = QuiebresStock.objects.count()
+    total_cajas_faltantes = QuiebresStock.objects.aggregate(
+        total=Coalesce(Sum("cantidad_faltante"), 0)
+    )["total"] or 0
+    
+    return _json_no_cache({
+        'total_quiebres': total_quiebres,
+        'total_cajas_faltantes': total_cajas_faltantes,
+    })
+
+
+def _exportar_quiebres_excel(quiebres):
+    """
+    Exporta los quiebres de stock a un archivo Excel
+    """
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Quiebres de Stock"
+
+    columnas = [
+        "Nº Nota",
+        "Código",
+        "Descripción",
+        "Cantidad Solicitada",
+        "Cantidad Entregada",
+        "Cantidad Faltante",
+        "Fecha Registro",
+    ]
+
+    # Encabezado con estilos
+    for col_num, titulo in enumerate(columnas, 1):
+        celda = ws.cell(row=1, column=col_num, value=titulo)
+        celda.font = Font(bold=True, color="FFFFFF")
+        celda.fill = PatternFill(start_color="DC3545", end_color="DC3545", fill_type="solid")
+        celda.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Datos
+    for row_num, quiebre in enumerate(quiebres, 2):
+        ws.cell(row=row_num, column=1, value=quiebre.nota.id)
+        ws.cell(row=row_num, column=2, value=quiebre.codigo or "")
+        ws.cell(row=row_num, column=3, value=quiebre.descripcion or "")
+        ws.cell(row=row_num, column=4, value=quiebre.cantidad_solicitada)
+        ws.cell(row=row_num, column=5, value=quiebre.cantidad_entregada)
+        ws.cell(row=row_num, column=6, value=quiebre.cantidad_faltante)
+        ws.cell(row=row_num, column=7, value=quiebre.fecha_registro.strftime('%d/%m/%Y %H:%M') if quiebre.fecha_registro else "")
+
+    # Ajustar ancho de columnas
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 40
+    ws.column_dimensions['D'].width = 18
+    ws.column_dimensions['E'].width = 18
+    ws.column_dimensions['F'].width = 18
+    ws.column_dimensions['G'].width = 18
+
+    # Adicionar fila de totales
+    ultima_fila = len(quiebres) + 2
+    ws.cell(row=ultima_fila, column=1, value="TOTAL")
+    ws.cell(row=ultima_fila, column=1).font = Font(bold=True)
+    
+    ws.cell(row=ultima_fila, column=4, value=f"=SUM(D2:D{ultima_fila-1})")
+    ws.cell(row=ultima_fila, column=4).font = Font(bold=True)
+    
+    ws.cell(row=ultima_fila, column=5, value=f"=SUM(E2:E{ultima_fila-1})")
+    ws.cell(row=ultima_fila, column=5).font = Font(bold=True)
+    
+    ws.cell(row=ultima_fila, column=6, value=f"=SUM(F2:F{ultima_fila-1})")
+    ws.cell(row=ultima_fila, column=6).font = Font(bold=True)
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="quiebres_stock.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+@require_POST
+@require_module_permission('pedidos', 'export')
+def descargar_quiebres_excel(request):
+    """
+    Vista para descargar quiebres de stock en Excel
+    """
+    # Obtener filtros si existen
+    quiebres = QuiebresStock.objects.select_related('nota', 'detalle').order_by('-fecha_registro')
+    
+    codigo = request.POST.get('codigo', '').strip()
+    if codigo:
+        quiebres = quiebres.filter(codigo__icontains=codigo)
+    
+    descripcion = request.POST.get('descripcion', '').strip()
+    if descripcion:
+        quiebres = quiebres.filter(descripcion__icontains=descripcion)
+    
+    fecha_desde = request.POST.get('fecha_desde', '').strip()
+    if fecha_desde:
+        try:
+            from datetime import datetime
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            quiebres = quiebres.filter(fecha_registro__gte=fecha_desde_dt)
+        except ValueError:
+            pass
+    
+    return _exportar_quiebres_excel(quiebres)
+
+
+
+
+
+

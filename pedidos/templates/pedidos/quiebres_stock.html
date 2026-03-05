@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quiebre de Stock{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">📊 Quiebre de Stock</h1>
+            <p class="text-muted">Visualización de productos con stock insuficiente</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'status_pedido' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a Status
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Productos con Quiebre</h5>
+                    <h2 class="mb-0">{{ total_quiebres }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Cajas Faltantes</h5>
+                    <h2 class="mb-0">{{ total_cajas_faltantes }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtros y Acciones</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="filterForm" class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label for="codigo" class="form-label">Código de Producto</label>
+                    <input type="text" class="form-control" id="codigo" name="codigo" 
+                           value="{{ request.GET.codigo }}" placeholder="Ej: 123456">
+                </div>
+                <div class="col-md-4">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <input type="text" class="form-control" id="descripcion" name="descripcion" 
+                           value="{{ request.GET.descripcion }}" placeholder="Buscar descripción">
+                </div>
+                <div class="col-md-4">
+                    <label for="fecha_desde" class="form-label">Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                           value="{{ request.GET.fecha_desde }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'listar_quiebres_stock' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+
+            <!-- Botón de Descarga Excel -->
+            <form method="POST" action="{% url 'descargar_quiebres_excel' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="codigo" value="{{ request.GET.codigo }}">
+                <input type="hidden" name="descripcion" value="{{ request.GET.descripcion }}">
+                <input type="hidden" name="fecha_desde" value="{{ request.GET.fecha_desde }}">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel"></i> Descargar Excel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Quiebres -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Listado de Quiebres</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th>Nº Nota</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Solicitado</th>
+                        <th class="text-center">Entregado</th>
+                        <th class="text-center bg-danger text-white">Faltante</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if quiebres %}
+                        {% for quiebre in quiebres %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'ver_nota_venta' quiebre.nota.id %}" class="btn btn-sm btn-link">
+                                    #{{ quiebre.nota.id }}
+                                </a>
+                            </td>
+                            <td>
+                                <code>{{ quiebre.codigo|default:'-' }}</code>
+                            </td>
+                            <td>
+                                <small>{{ quiebre.descripcion|truncatewords:10 }}</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info">{{ quiebre.cantidad_solicitada }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success">{{ quiebre.cantidad_entregada }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger">{{ quiebre.cantidad_faltante }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ quiebre.fecha_registro|date:"d/m/Y H:i" }}
+                                </small>
+                            </td>
+                            <td>
+                                <a href="{% url 'ver_nota_venta' quiebre.nota.id %}" 
+                                   class="btn btn-sm btn-outline-primary" title="Ver nota">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem; color: #ccc;"></i>
+                                <p class="text-muted mt-2">No hay registros de quiebre de stock</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if quiebres.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if quiebres.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.codigo %}&codigo={{ request.GET.codigo }}{% endif %}{% if request.GET.descripcion %}&descripcion={{ request.GET.descripcion }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}">Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ quiebres.previous_page_number }}{% if request.GET.codigo %}&codigo={{ request.GET.codigo }}{% endif %}{% if request.GET.descripcion %}&descripcion={{ request.GET.descripcion }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}">Anterior</a>
+                </li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">Página {{ quiebres.number }} de {{ quiebres.paginator.num_pages }}</span>
+            </li>
+
+            {% if quiebres.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ quiebres.next_page_number }}{% if request.GET.codigo %}&codigo={{ request.GET.codigo }}{% endif %}{% if request.GET.descripcion %}&descripcion={{ request.GET.descripcion }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ quiebres.paginator.num_pages }}{% if request.GET.codigo %}&codigo={{ request.GET.codigo }}{% endif %}{% if request.GET.descripcion %}&descripcion={{ request.GET.descripcion }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}">Última</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .badge {
+        padding: 0.35rem 0.65rem;
+        font-weight: 600;
+    }
+    
+    table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    code {
+        color: #d63384;
+        background-color: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}

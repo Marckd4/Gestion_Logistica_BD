@@ -1,12 +1,55 @@
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from functools import wraps
 
 from bodegabsf.forms import BsfForm
 from .models import Bsf  # importar el modelo
+from pedidos.models import UserModulePermission
+
+
+def _user_has_module_permission(user, module, action):
+    if user.is_superuser:
+        return True
+
+    permiso = UserModulePermission.objects.filter(user=user, module=module).first()
+    if not permiso:
+        return False
+
+    permisos = {
+        'view': permiso.can_view,
+        'create': permiso.can_create,
+        'edit': permiso.can_edit,
+        'delete': permiso.can_delete,
+        'export': permiso.can_export,
+        'report': permiso.can_report,
+    }
+    return permisos.get(action, False)
+
+
+def require_module_permission(module, action):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            if _user_has_module_permission(request.user, module, action):
+                return view_func(request, *args, **kwargs)
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'ok': False, 'message': 'No tienes permisos para esta acción.'}, status=403)
+
+            messages.error(request, 'No tienes permisos para esta acción en este módulo.')
+            return redirect('inicio')
+
+        return _wrapped_view
+
+    return decorator
 
 
 
+@login_required
+@require_module_permission('bodegabsf', 'view')
 def data(request):
     bsfs = Bsf.objects.all()
     return render(request, 'index.html', context={'bsfs': bsfs})
@@ -38,6 +81,8 @@ def limpiar(valor):
         return ""
     return str(valor)
 
+@login_required
+@require_module_permission('bodegabsf', 'export')
 def exportar_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -94,6 +139,8 @@ from .models import Bsf
 from .forms import BsfForm
 
 # ---------- EDITAR ----------
+@login_required
+@require_module_permission('bodegabsf', 'edit')
 def editar_bsf(request, id):
     bsf = get_object_or_404(Bsf, id=id)
 
@@ -109,6 +156,8 @@ def editar_bsf(request, id):
 
 
 # ---------- ELIMINAR ----------
+@login_required
+@require_module_permission('bodegabsf', 'delete')
 def eliminar_bsf(request, id):
     bsf = get_object_or_404(Bsf, id=id)
 
@@ -127,6 +176,8 @@ from django.http import JsonResponse
 from .models import Bsf
 from .forms import BsfForm
 
+@login_required
+@require_module_permission('bodegabsf', 'create')
 def formulario(request, id=None):
     mensaje = ""
     if id:  # modo edición
@@ -145,6 +196,8 @@ def formulario(request, id=None):
 
     return render(request, 'bsf_form.html', {"form": form, "mensaje": mensaje})
 
+@login_required
+@require_module_permission('bodegabsf', 'view')
 def buscar_producto(request):
     cod_dun = request.GET.get('cod_dun', '').strip()
     resultados = []
@@ -168,6 +221,8 @@ def buscar_producto(request):
 from django.shortcuts import render
 from .models import Bsf
 
+@login_required
+@require_module_permission('bodegabsf', 'view')
 def resumen_bsf(request):
     datos = Bsf.objects.all().values(
         "cod_dun",
@@ -201,6 +256,8 @@ from django.shortcuts import render
 from django.db.models import Sum
 from .models import Bsf
 
+@login_required
+@require_module_permission('bodegabsf', 'report')
 def resumen_pedidos(request):
     fecha = request.GET.get('fecha')
     pedido = request.GET.get('pedido')
@@ -248,6 +305,8 @@ from django.db.models import Sum
 from .models import Bsf
 
 
+@login_required
+@require_module_permission('bodegabsf', 'export')
 def resumen_pedidos_excel(request):
     fecha = request.GET.get('fecha')
     pedido = request.GET.get('pedido')
@@ -329,6 +388,8 @@ from django.db.models import Sum
 from .models import Bsf
 
 
+@login_required
+@require_module_permission('bodegabsf', 'report')
 def resumen_general_pedidos(request):
     fecha = request.GET.get('fecha')
     pedido = request.GET.get('pedido')
@@ -380,6 +441,8 @@ from django.db.models import Sum
 from .models import Bsf
 
 
+@login_required
+@require_module_permission('bodegabsf', 'export')
 def resumen_general_pedidos_excel(request):
     fecha = request.GET.get('fecha')
     pedido = request.GET.get('pedido')
@@ -500,6 +563,8 @@ def limpiar_fecha(valor):
 # -----------------------------
 # IMPORTAR EXCEL
 # -----------------------------
+@login_required
+@require_module_permission('bodegabsf', 'create')
 def importar_excel(request):
     if request.method == "POST":
         form = ImportarExcelForm(request.POST, request.FILES)
@@ -594,6 +659,7 @@ def es_admin(user):
 
 @login_required
 @user_passes_test(es_admin)
+@require_module_permission('bodegabsf', 'delete')
 def borrar_todo_bsf(request):
     if request.method == "POST":
         with transaction.atomic():

@@ -1,9 +1,52 @@
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from functools import wraps
 
 from bodegacentral.forms import CentralForm
 from .models import Central # IMPORTAR EL MODEL 
+from pedidos.models import UserModulePermission
 
+
+def _user_has_module_permission(user, module, action):
+    if user.is_superuser:
+        return True
+
+    permiso = UserModulePermission.objects.filter(user=user, module=module).first()
+    if not permiso:
+        return False
+
+    permisos = {
+        'view': permiso.can_view,
+        'create': permiso.can_create,
+        'edit': permiso.can_edit,
+        'delete': permiso.can_delete,
+        'export': permiso.can_export,
+        'report': permiso.can_report,
+    }
+    return permisos.get(action, False)
+
+
+def require_module_permission(module, action):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            if _user_has_module_permission(request.user, module, action):
+                return view_func(request, *args, **kwargs)
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'ok': False, 'message': 'No tienes permisos para esta acción.'}, status=403)
+
+            messages.error(request, 'No tienes permisos para esta acción en este módulo.')
+            return redirect('inicio')
+
+        return _wrapped_view
+
+    return decorator
+
+@login_required
+@require_module_permission('bodegacentral', 'view')
 def index(request):
     centrales = Central.objects.all()
    
@@ -35,6 +78,8 @@ from django.http import HttpResponse
 def limpiar_valor(valor):
     return "" if valor in (None, "", 0) else valor
 
+@login_required
+@require_module_permission('bodegacentral', 'export')
 def exportar_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -94,6 +139,8 @@ from .models import Central
 from .forms import CentralForm
 
 # -------- EDITAR CENTRAL --------
+@login_required
+@require_module_permission('bodegacentral', 'edit')
 def editar_central(request, id):
     central = get_object_or_404(Central, id=id)
 
@@ -109,6 +156,8 @@ def editar_central(request, id):
 
 
 # -------- ELIMINAR CENTRAL --------
+@login_required
+@require_module_permission('bodegacentral', 'delete')
 def eliminar_central(request, id):
     central = get_object_or_404(Central, id=id)
 
@@ -129,6 +178,8 @@ from .models import Central
 from .forms import CentralForm
 
 
+@login_required
+@require_module_permission('bodegacentral', 'create')
 def formulario_central(request, id=None):
     mensaje = ""
     if id:  # modo edición
@@ -147,6 +198,8 @@ def formulario_central(request, id=None):
 
     return render(request, 'central_form.html', {"form": form, "mensaje": mensaje})
 
+@login_required
+@require_module_permission('bodegacentral', 'view')
 def buscar_producto(request):
     cod_dun = request.GET.get('cod_dun', '').strip()
     resultados = []
@@ -169,6 +222,8 @@ def buscar_producto(request):
 from django.shortcuts import render
 from .models import Central
 
+@login_required
+@require_module_permission('bodegacentral', 'view')
 def resumen_central(request):
     # Traemos solo los campos necesarios
     datos = Central.objects.all().values(

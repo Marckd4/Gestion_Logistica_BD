@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="text-align: left; margin-bottom: 20px;" class="d-flex gap-2">
+    <a href="{% url 'manage_users' %}" class="btn-volver">⬅ Volver a Usuarios</a>
+</div>
+
+<div class="container mt-4">
+    <h2 class="mb-3">🟢 Status de Usuarios</h2>
+    <p class="text-muted mb-4">
+        Un usuario se considera <strong>Conectado</strong> si tuvo actividad en los últimos {{ timeout_minutes }} minutos.
+    </p>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre del usuario</th>
+                            <th>Estado</th>
+                            <th>Módulo actual</th>
+                            <th>Última conexión</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in usuarios_status %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.usuario.username }}</strong>
+                                    {% if item.usuario.first_name %}
+                                        <br>
+                                        <small class="text-muted">{{ item.usuario.first_name }} {{ item.usuario.last_name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.conectado %}
+                                        <span class="badge bg-success">Conectado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Desconectado</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.modulo_actual }}</td>
+                                <td>
+                                    {% if item.ultima_conexion %}
+                                        {{ item.ultima_conexion|date:"d/m/Y H:i:s" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

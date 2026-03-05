@@ -13,7 +13,7 @@
             <h5 class="mb-0">Stock del Producto</h5>
         </div>
         <div class="card-body">
-            <div class="row text-center">
+            <div class="row text-center mb-3">
                 <div class="col-md-4 mb-3 mb-md-0">
                     <div class="border rounded p-3 h-100">
                         <h6 class="mb-2">Stock BSF</h6>
@@ -28,10 +28,26 @@
                         <small class="text-muted">cajas</small>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="border rounded p-3 h-100 bg-warning bg-opacity-25">
+                        <h6 class="mb-2">Stock en Reserva</h6>
+                        <h4 class="mb-0 text-warning" id="stock_reserva">0</h4>
+                        <small class="text-muted">cajas</small>
+                    </div>
+                </div>
+            </div>
+            <div class="row text-center">
+                <div class="col-md-6 mb-3 mb-md-0">
                     <div class="border rounded p-3 h-100 bg-light">
                         <h6 class="mb-2">Stock Total</h6>
-                        <h4 class="mb-0 text-success" id="stock_total">0</h4>
+                        <h4 class="mb-0 text-primary" id="stock_total">0</h4>
+                        <small class="text-muted">cajas</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100 bg-success bg-opacity-25">
+                        <h6 class="mb-2">Stock Disponible Real</h6>
+                        <h4 class="mb-0 text-success" id="stock_disponible">0</h4>
                         <small class="text-muted">cajas</small>
                     </div>
                 </div>
@@ -91,16 +107,25 @@
                             <th>Descripción</th>
                             <th>Cantidad Solicitada</th>
                             <th>Valor del Producto</th>
+                            <th style="width: 120px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tabla_productos_body">
                         {% for d in detalles %}
-                        <tr>
+                        <tr id="fila_detalle_{{ d.id }}" data-detalle-id="{{ d.id }}">
                             <td>{{ forloop.counter }}</td>
                             <td>{{ d.codigo|default:"-" }}</td>
                             <td>{{ d.descripcion }}</td>
-                            <td>{{ d.cantidad_solicitada }}</td>
-                            <td>{{ d.precio_x_caja }}</td>
+                            <td class="cantidad_celda">{{ d.cantidad_solicitada }}</td>
+                            <td class="valor_celda">{{ d.precio_x_caja }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-warning btn-editar" data-detalle-id="{{ d.id }}" title="Editar">
+                                    ✏️ Editar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger btn-eliminar" data-detalle-id="{{ d.id }}" title="Eliminar">
+                                    🗑️ Eliminar
+                                </button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -125,7 +150,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const dunInput = document.getElementById("id_cod_dun");
     const stockBsf = document.getElementById("stock_bsf");
     const stockCentral = document.getElementById("stock_central");
+    const stockReserva = document.getElementById("stock_reserva");
     const stockTotal = document.getElementById("stock_total");
+    const stockDisponible = document.getElementById("stock_disponible");
     const estado = document.getElementById("estado_producto");
     const cantidadInput = document.getElementById("id_cantidad_solicitada");
     const valorInput = document.getElementById("id_valor_producto");
@@ -136,17 +163,19 @@ document.addEventListener("DOMContentLoaded", function () {
     let debounceTimer = null;
     let correlativo = {{ next_correlativo|default:1 }};
 
-    const actualizarStocks = (bsf, central, total) => {
+    const actualizarStocks = (bsf, central, total, reserva, disponible) => {
         stockBsf.textContent = bsf ?? 0;
         stockCentral.textContent = central ?? 0;
+        stockReserva.textContent = reserva ?? 0;
         stockTotal.textContent = total ?? 0;
+        stockDisponible.textContent = disponible ?? 0;
     };
 
     const limpiarCampos = () => {
         descripcionInput.value = "";
         eanInput.value = "";
         dunInput.value = "";
-        actualizarStocks(0, 0, 0);
+        actualizarStocks(0, 0, 0, 0, 0);
     };
 
     const buscarProducto = async () => {
@@ -185,7 +214,13 @@ document.addEventListener("DOMContentLoaded", function () {
             descripcionInput.value = data.producto.descripcion || "";
             eanInput.value = data.producto.cod_ean || "";
             dunInput.value = data.producto.cod_dun || "";
-            actualizarStocks(data.stocks.bsf, data.stocks.central, data.stocks.total);
+            actualizarStocks(
+                data.stocks.bsf,
+                data.stocks.central,
+                data.stocks.total,
+                data.stocks.reserva,
+                data.stocks.disponible
+            );
             estado.textContent = "Producto encontrado.";
         } catch (error) {
             estado.textContent = "Error al consultar el producto.";
@@ -199,6 +234,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     codigoInput.addEventListener("blur", buscarProducto);
+
+    codigoInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            buscarProducto();
+            // Mover el foco al campo de cantidad después de buscar
+            setTimeout(() => {
+                cantidadInput.focus();
+            }, 100);
+        }
+    });
 
     btnAgregar.addEventListener("click", async function () {
         const codigo = codigoInput.value.trim();
@@ -248,12 +294,22 @@ document.addEventListener("DOMContentLoaded", function () {
             const detalle = data.detalle;
 
             const fila = document.createElement("tr");
+            fila.id = `fila_detalle_${detalle.id}`;
+            fila.setAttribute("data-detalle-id", detalle.id);
             fila.innerHTML = `
                 <td>${correlativo}</td>
                 <td>${detalle.codigo}</td>
                 <td>${detalle.descripcion}</td>
-                <td>${detalle.cantidad}</td>
-                <td>${detalle.valor}</td>
+                <td class="cantidad_celda">${detalle.cantidad}</td>
+                <td class="valor_celda">${detalle.valor}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-warning btn-editar" data-detalle-id="${detalle.id}" title="Editar">
+                        ✏️ Editar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger btn-eliminar" data-detalle-id="${detalle.id}" title="Eliminar">
+                        🗑️ Eliminar
+                    </button>
+                </td>
             `;
 
             tablaBody.appendChild(fila);
@@ -270,6 +326,128 @@ document.addEventListener("DOMContentLoaded", function () {
         } finally {
             btnAgregar.disabled = false;
         }
+    });
+
+    // Manejar evento de eliminar producto
+    document.addEventListener("click", async function (e) {
+        if (!e.target.classList.contains("btn-eliminar")) return;
+        
+        const detalleId = e.target.getAttribute("data-detalle-id");
+        if (!confirm("¿Estás seguro de que deseas eliminar este producto?")) return;
+        
+        try {
+            const response = await fetch(`/pedidos/eliminar-detalle/{{ nota.id }}/${detalleId}/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken || ""
+                }
+            });
+            
+            const data = await response.json();
+            if (!response.ok || !data.ok) {
+                estado.textContent = data.message || "Error al eliminar el producto.";
+                return;
+            }
+            
+            const fila = document.getElementById(`fila_detalle_${detalleId}`);
+            if (fila) fila.remove();
+            
+            estado.textContent = data.message || "Producto eliminado correctamente.";
+        } catch (error) {
+            estado.textContent = "Error al eliminar el producto.";
+        }
+    });
+
+    // Manejar evento de editar producto
+    document.addEventListener("click", function (e) {
+        if (!e.target.classList.contains("btn-editar")) return;
+        
+        const detalleId = e.target.getAttribute("data-detalle-id");
+        const fila = document.getElementById(`fila_detalle_${detalleId}`);
+        if (!fila) return;
+        
+        const cantidadCelda = fila.querySelector(".cantidad_celda");
+        const valorCelda = fila.querySelector(".valor_celda");
+        
+        const cantidadActual = cantidadCelda.textContent.trim();
+        const valorActual = valorCelda.textContent.trim();
+        
+        // Crear inputs editable
+        cantidadCelda.innerHTML = `<input type="number" class="form-control form-control-sm edit-cantidad" value="${cantidadActual}" min="1">`;
+        valorCelda.innerHTML = `<input type="number" class="form-control form-control-sm edit-valor" value="${valorActual}" min="0" step="0.01">`;
+        
+        // Cambiar botón de editar a guardar
+        const btnEditar = e.target;
+        const btnGuardar = document.createElement("button");
+        btnGuardar.type = "button";
+        btnGuardar.className = "btn btn-sm btn-success btn-guardar";
+        btnGuardar.setAttribute("data-detalle-id", detalleId);
+        btnGuardar.textContent = "✓ Guardar";
+        
+        const btnCancelar = document.createElement("button");
+        btnCancelar.type = "button";
+        btnCancelar.className = "btn btn-sm btn-secondary btn-cancelar";
+        btnCancelar.setAttribute("data-detalle-id", detalleId);
+        btnCancelar.textContent = "✕ Cancelar";
+        
+        btnEditar.replaceWith(btnGuardar);
+        const btnEliminar = fila.querySelector(".btn-eliminar");
+        btnEliminar.before(btnCancelar);
+        
+        // Evento para guardar
+        btnGuardar.addEventListener("click", async function () {
+            const cantidad = fila.querySelector(".edit-cantidad").value.trim();
+            const valor = fila.querySelector(".edit-valor").value.trim();
+            
+            if (!cantidad || isNaN(cantidad) || cantidad <= 0) {
+                estado.textContent = "Cantidad inválida.";
+                return;
+            }
+            
+            if (!valor || isNaN(valor) || valor < 0) {
+                estado.textContent = "Valor inválido.";
+                return;
+            }
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.set("cantidad", cantidad);
+                formData.set("valor", valor);
+                
+                const response = await fetch(`/pedidos/editar-detalle/{{ nota.id }}/${detalleId}/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-CSRFToken": csrfToken || ""
+                    },
+                    body: formData.toString()
+                });
+                
+                const data = await response.json();
+                if (!response.ok || !data.ok) {
+                    estado.textContent = data.message || "Error al actualizar el producto.";
+                    return;
+                }
+                
+                cantidadCelda.textContent = cantidad;
+                valorCelda.textContent = data.detalle.valor;
+                
+                btnGuardar.replaceWith(btnEditar);
+                btnCancelar.remove();
+                
+                estado.textContent = data.message || "Producto actualizado correctamente.";
+            } catch (error) {
+                estado.textContent = "Error al actualizar el producto.";
+            }
+        });
+        
+        // Evento para cancelar
+        btnCancelar.addEventListener("click", function () {
+            cantidadCelda.textContent = cantidadActual;
+            valorCelda.textContent = valorActual;
+            btnGuardar.replaceWith(btnEditar);
+            btnCancelar.remove();
+        });
     });
 });
 </script>

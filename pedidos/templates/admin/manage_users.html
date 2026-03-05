@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .permission-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .permission-enabled {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .permission-disabled {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .module-card {
+        border-left: 5px solid #0a3d62;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    .permission-checkbox {
+        margin-right: 10px;
+    }
+    
+    .user-row {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .user-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 15px;
+    }
+    
+    .user-name {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #0a3d62;
+    }
+    
+    .module-access-count {
+        background: #e7f3ff;
+        color: #0a3d62;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .permission-section {
+        margin-top: 15px;
+        padding: 15px;
+        background: white;
+        border-radius: 5px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .permission-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .permission-item label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0;
+        cursor: pointer;
+    }
+    
+    .permission-item input[type="checkbox"] {
+        margin-right: 8px;
+    }
+    
+    .btn-group-vertical-custom {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .badge-count {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        margin-left: 8px;
+    }
+    
+    .add-module-section {
+        background: #e7f3ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 15px;
+    }
+    
+    .modal-permissions {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+</style>
+
+<div style="text-align: left; margin-bottom: 20px;">
+    <a href="{% url 'inicio' %}" class="btn-volver">⬅ Volver</a>
+</div>
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">👥 Administración de Usuarios y Permisos</h2>
+        <a href="{% url 'status_usuarios' %}" class="btn btn-outline-primary btn-sm">
+            🟢 Ver Status de Usuarios
+        </a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Sección de Usuarios -->
+    {% if usuarios_data %}
+        {% for item in usuarios_data %}
+            <div class="user-row">
+                <div class="user-header">
+                    <div>
+                        <span class="user-name">{{ item.usuario.username }}</span>
+                        {% if item.usuario.first_name %}
+                            <small class="text-muted">({{ item.usuario.first_name }} {{ item.usuario.last_name }})</small>
+                        {% endif %}
+                        <span class="module-access-count">{{ item.total_modulos }} módulos</span>
+                    </div>
+                    <div>
+                        {% if item.usuario.is_staff %}
+                            <span class="badge bg-warning text-dark">Staff</span>
+                        {% endif %}
+                        {% if item.usuario.is_superuser %}
+                            <span class="badge bg-danger">Admin</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if request.user.is_superuser %}
+                <div class="mb-3">
+                    <form method="post" action="{% url 'toggle_superuser' item.usuario.id %}" class="d-inline">
+                        {% csrf_token %}
+                        {% if item.usuario.is_superuser %}
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('¿Seguro que deseas desactivar superusuario para {{ item.usuario.username }}?');"
+                                {% if item.usuario.id == request.user.id %}disabled title="No puedes quitarte tu propio rol"{% endif %}
+                            >
+                                🔒 Desactivar Superusuario
+                            </button>
+                        {% else %}
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-outline-success"
+                                onclick="return confirm('¿Seguro que deseas activar superusuario para {{ item.usuario.username }}?');"
+                            >
+                                🔓 Activar Superusuario
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+                {% endif %}
+                
+                <!-- Módulos con Acceso -->
+                {% if item.modulos_acceso %}
+                    <div class="accordion mb-3" id="accordion-{{ item.usuario.id }}">
+                        {% for module, perm in item.modulos_acceso.items %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ item.usuario.id }}-{{ module }}">
+                                        📦 {{ perm.get_module_display }}
+                                        <span class="badge-count">
+                                            {% if perm.can_view %}V{% endif %}
+                                            {% if perm.can_create %}C{% endif %}
+                                            {% if perm.can_edit %}E{% endif %}
+                                            {% if perm.can_delete %}D{% endif %}
+                                            {% if perm.can_export %}X{% endif %}
+                                            {% if perm.can_report %}R{% endif %}
+                                        </span>
+                                    </button>
+                                </h2>
+                                <div id="collapse-{{ item.usuario.id }}-{{ module }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ item.usuario.id }}">
+                                    <div class="accordion-body">
+                                        <form method="post" action="{% url 'actualizar_permiso' item.usuario.id module %}">
+                                            {% csrf_token %}
+                                            
+                                            <div class="permission-section">
+                                                <h6>Permisos específicos:</h6>
+                                                <div class="permission-group">
+                                                    <div class="permission-item">
+                                                        <label>
+                                                            <input type="checkbox" name="can_view" class="permission-checkbox" {% if perm.can_view %}checked{% endif %}>
+                                                            👁️ Ver
+                                                        </label>
+                                                    </div>
+                                                    <div class="permission-item">
+                                                        <label>
+                                                            <input type="checkbox" name="can_create" class="permission-checkbox" {% if perm.can_create %}checked{% endif %}>
+                                                            ➕ Crear
+                                                        </label>
+                                                    </div>
+                                                    <div class="permission-item">
+                                                        <label>
+                                                            <input type="checkbox" name="can_edit" class="permission-checkbox" {% if perm.can_edit %}checked{% endif %}>
+                                                            ✏️ Editar
+                                                        </label>
+                                                    </div>
+                                                    <div class="permission-item">
+                                                        <label>
+                                                            <input type="checkbox" name="can_delete" class="permission-checkbox" {% if perm.can_delete %}checked{% endif %}>
+                                                            🗑️ Eliminar
+                                                        </label>
+                                                    </div>
+                                                    <div class="permission-item">
+                                                        <label>
+                                                            <input type="checkbox" name="can_export" class="permission-checkbox" {% if perm.can_export %}checked{% endif %}>
+                                                            📥 Exportar
+                                                        </label>
+                                                    </div>
+                                                    <div class="permission-item">
+                                                        <label>
+                                                            <input type="checkbox" name="can_report" class="permission-checkbox" {% if perm.can_report %}checked{% endif %}>
+                                                            📊 Reportes
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="btn-group-vertical-custom mt-3">
+                                                <button type="submit" class="btn btn-sm btn-success">💾 Guardar Cambios</button>
+                                                <button
+                                                    type="submit"
+                                                    form="remove-access-{{ item.usuario.id }}-{{ module }}"
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('¿Eliminar acceso a este módulo?');"
+                                                >
+                                                    🚫 Quitar Acceso
+                                                </button>
+                                            </div>
+                                        </form>
+
+                                        <form
+                                            id="remove-access-{{ item.usuario.id }}-{{ module }}"
+                                            method="post"
+                                            action="{% url 'eliminar_acceso_modulo' item.usuario.id module %}"
+                                            class="d-none"
+                                        >
+                                            {% csrf_token %}
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        Este usuario no tiene acceso a ningún módulo.
+                    </div>
+                {% endif %}
+                
+                <!-- Sección para Agregar Novo Módulo -->
+                <div class="add-module-section">
+                    <form method="post" action="{% url 'agregar_acceso_modulo' item.usuario.id %}" class="d-flex gap-2 align-items-center">
+                        {% csrf_token %}
+                        
+                        <select name="module" class="form-select form-select-sm" style="max-width: 250px;">
+                            <option value="">-- Seleccionar módulo --</option>
+                            {% for module_key, module_name in all_modulos_dict.items %}
+                                {% if module_key not in item.modulos_acceso %}
+                                    <option value="{{ module_key }}">{{ module_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        
+                        <button type="submit" class="btn btn-sm btn-primary">➕ Agregar Módulo</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-warning">
+            No hay usuarios registrados en el sistema.
+        </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Validar que al menos un permiso esté seleccionado
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+            
+            if (checkboxes.length > 0 && !anyChecked) {
+                e.preventDefault();
+                alert('Debes seleccionar al menos un permiso.');
+            }
+        });
+    });
+</script>
+
+{% endblock %}

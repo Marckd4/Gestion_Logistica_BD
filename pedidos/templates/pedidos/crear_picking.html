@@ -111,6 +111,14 @@
         </div>
     </div>
 
+    {% if nota.estado == 'despachada' %}
+    <div class="alert alert-success no-print" role="alert">
+        <strong>✓ Informativo:</strong> Este picking ya fue finalizado y procesado exitosamente. 
+        La nota ha sido marcada como <span class="badge bg-success">Despachada</span>. 
+        No es posible procesar picking nuevamente para evitar duplicados.
+    </div>
+    {% endif %}
+
     {% if pendientes %}
     <div class="alert alert-warning no-print">
         <strong>Advertencia:</strong> Hay productos con stock insuficiente en Bodega Central.
@@ -179,9 +187,11 @@
                 </table>
             </div>
 
-            <form method="post" class="mt-3 no-print">
+            <form method="post" class="mt-3 no-print" id="termino-picking-form">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-success" {% if pendientes %}disabled{% endif %}>Término de Picking</button>
+                   <button type="submit" class="btn btn-success" id="btn-termino-picking" {% if nota_despachada %}disabled{% endif %}>
+                       {% if nota_despachada %}✓ Picking Finalizado{% else %}Término de Picking{% endif %}
+                   </button>
             </form>
         </div>
     </div>
@@ -261,7 +271,32 @@ function descargarPDF(notaId) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Script para manejar impresión
+    // Script para bloquear el botón "Término de Picking" cuando se presiona
+    const btnTerminoPicking = document.getElementById('btn-termino-picking');
+    const formaTerminoPicking = document.getElementById('termino-picking-form');
+    
+    if (btnTerminoPicking && formaTerminoPicking) {
+                // Si el botón ya está deshabilitado (nota despachada), no agregar el event listener
+                if (btnTerminoPicking.disabled) {
+                    return;
+                }
+        
+        formaTerminoPicking.addEventListener('submit', function(e) {
+            // Bloquear el botón cuando se envía el formulario
+            btnTerminoPicking.disabled = true;
+               btnTerminoPicking.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+           
+               // Agregar un timeout para evitar que se quede en "Procesando indefinidamente
+               setTimeout(function() {
+                   if (!document.body.classList.contains('form-submitted')) {
+                       btnTerminoPicking.disabled = false;
+                       btnTerminoPicking.innerHTML = 'Término de Picking';
+                   }
+               }, 30000); // 30 segundos timeout
+           
+               document.body.classList.add('form-submitted');
+        });
+    }
 });
 </script>
 

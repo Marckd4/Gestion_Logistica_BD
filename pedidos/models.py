@@ -4,6 +4,55 @@ from decimal import Decimal
 
 
 # ==========================================
+#           PERMISOS DE USUARIO
+# ==========================================
+
+class UserModulePermission(models.Model):
+    MODULE_CHOICES = (
+        ('bodegabsf', 'Bodega BSF'),
+        ('bodegacentral', 'Bodega Central'),
+        ('pedidos', 'Gestión de Pedidos'),
+        ('reportes', 'Reportes'),
+        ('admin', 'Panel Administrativo'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='module_permissions')
+    module = models.CharField(max_length=50, choices=MODULE_CHOICES)
+
+    can_view = models.BooleanField(default=False, help_text="Ver/Consultar datos")
+    can_create = models.BooleanField(default=False, help_text="Crear nuevos registros")
+    can_edit = models.BooleanField(default=False, help_text="Editar registros existentes")
+    can_delete = models.BooleanField(default=False, help_text="Eliminar registros")
+    can_export = models.BooleanField(default=False, help_text="Exportar datos")
+    can_report = models.BooleanField(default=False, help_text="Generar reportes")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'module')
+        verbose_name = "Permiso de Módulo de Usuario"
+        verbose_name_plural = "Permisos de Módulos de Usuarios"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_module_display()}"
+
+
+class UserConnectionStatus(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='connection_status')
+    current_module = models.CharField(max_length=120, blank=True, default='')
+    current_path = models.CharField(max_length=255, blank=True, default='')
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Estado de Conexión de Usuario"
+        verbose_name_plural = "Estados de Conexión de Usuarios"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.current_module or 'Sin módulo'}"
+
+
+# ==========================================
 #           NOTA DE VENTA
 # ==========================================
 
@@ -17,6 +66,7 @@ class NotaVenta(models.Model):
     ESTADO_CHOICES = (
         ('borrador', 'Borrador'),
         ('finalizada', 'Finalizada'),
+        ('despachada', 'Despachada'),
     )
 
     fecha = models.DateTimeField(auto_now_add=True)
@@ -129,3 +179,41 @@ class DetalleNota(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} - {self.cantidad_solicitada} cajas"
+
+
+# ==========================================
+#           QUIEBRE DE STOCK
+# ==========================================
+
+class QuiebresStock(models.Model):
+    """
+    Modelo para registrar productos que tuvieron quiebre de stock
+    (cantidad solicitada mayor que la disponible)
+    """
+    nota = models.ForeignKey(
+        NotaVenta,
+        on_delete=models.CASCADE,
+        related_name="quiebres_stock"
+    )
+    detalle = models.ForeignKey(
+        DetalleNota,
+        on_delete=models.CASCADE,
+        related_name="quiebres_stock"
+    )
+    
+    codigo = models.CharField(max_length=50, blank=True, null=True)
+    descripcion = models.TextField(max_length=350)
+    
+    cantidad_solicitada = models.PositiveIntegerField()
+    cantidad_entregada = models.PositiveIntegerField()
+    cantidad_faltante = models.PositiveIntegerField()
+    
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Quiebre de Stock"
+        verbose_name_plural = "Quiebres de Stock"
+        ordering = ['-fecha_registro']
+    
+    def __str__(self):
+        return f"{self.descripcion} - {self.cantidad_faltante} cajas faltantes"
