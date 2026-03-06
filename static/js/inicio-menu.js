@@ -60,11 +60,3 @@ function mostrarClipInfo(id, modelo) {
         toast.style.display = "none";
     }, 5000);
 }
-
-// Efectos visuales - animación de tarjetas al cargar
-window.addEventListener('load', () => {
-    const cards = document.querySelectorAll('.card-erp');
-    cards.forEach((card, index) => {
-        card.style.animation = `fadeInUp 0.6s ease ${index * 0.1}s both`;
-    });
-});

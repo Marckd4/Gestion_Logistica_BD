@@ -42,7 +42,6 @@
     font-weight: 600;
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    transition: all 0.3s ease;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -93,7 +92,6 @@
 .card-erp {
     border: none;
     border-radius: 12px;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     background: #ffffff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -118,11 +116,9 @@
 .card-erp.active-card {
     z-index: 2000;
     box-shadow: 0 12px 32px rgba(15,76,117,0.2);
-    transform: translateY(-3px);
 }
 
 .card-erp:hover {
-    transform: translateY(-6px);
     box-shadow: 0 12px 32px rgba(0,0,0,0.15);
 }
 
@@ -171,23 +167,13 @@
     padding: 6px 0;
     display: none;
     z-index: 2100;
-    animation: dropdownSlide 0.25s ease;
     border-top: 3px solid #1f4e79;
     max-height: 400px;
     overflow-y: auto;
     margin-top: 8px;
 }
 
-@keyframes dropdownSlide {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+
 
 .erp-dropdown a {
     display: flex;
@@ -196,7 +182,6 @@
     font-size: 0.95rem;
     text-decoration: none;
     color: #333;
-    transition: all 0.2s ease;
     border-left: 4px solid transparent;
     position: relative;
     gap: 8px;
@@ -216,9 +201,6 @@
     bottom: 0;
     width: 4px;
     background: linear-gradient(180deg, #1f4e79, #3c6382);
-    transform: scaleY(0);
-    transform-origin: center;
-    transition: transform 0.2s ease;
 }
 
 .erp-dropdown a:hover {
@@ -229,7 +211,6 @@
 }
 
 .erp-dropdown a:hover::before {
-    transform: scaleY(1);
 }
 
 .erp-dropdown .border-top {
@@ -317,7 +298,6 @@
     padding: 1.2rem;
     z-index: 9999;
     display: none;
-    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     border-left: 5px solid #198754;
 }
 
@@ -335,16 +315,7 @@
     font-size: 0.9rem;
 }
 
-@keyframes slideUp {
-    from {
-        transform: translateY(40px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
+
 
 /* GRID DE MÓDULOS */
 .row.g-4 {
@@ -385,13 +356,4 @@
     }
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+
