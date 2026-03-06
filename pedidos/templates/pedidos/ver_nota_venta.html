@@ -1,108 +1,13 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load static %}
+
+{% block extra_css %}
+<link href="{% static 'css/nota-venta.css' %}" rel="stylesheet">
+<link href="{% static 'css/print-styles.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-
-<style>
-.nota-wrapper {
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-.data-label {
-    color: #495057;
-    font-weight: 600;
-}
-
-.data-value {
-    color: #212529;
-}
-
-.fact-box {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 14px;
-    height: 100%;
-    background: #fff;
-}
-
-.fact-title {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    color: #1f2d3d;
-    border-bottom: 1px solid #e9ecef;
-    padding-bottom: 8px;
-}
-
-.fact-row {
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    column-gap: 12px;
-    padding: 4px 0;
-    align-items: start;
-}
-
-.fact-key {
-    color: #495057;
-    font-weight: 600;
-}
-
-.fact-val {
-    color: #212529;
-    word-break: break-word;
-}
-
-.table-nota {
-    min-width: 1250px;
-}
-
-.table-nota th,
-.table-nota td {
-    vertical-align: middle;
-}
-
-.col-nowrap {
-    white-space: nowrap;
-}
-
-.col-wrap {
-    white-space: normal;
-    word-break: break-word;
-    min-width: 260px;
-}
-
-.col-number {
-    text-align: right;
-    white-space: nowrap;
-}
-
-@media print {
-    .no-print {
-        display: none !important;
-    }
-
-    .card {
-        border: 1px solid #000 !important;
-        box-shadow: none !important;
-    }
-
-    .container {
-        max-width: 100% !important;
-    }
-
-    .table-responsive {
-        overflow: visible !important;
-    }
-
-    .table-nota {
-        min-width: 100% !important;
-    }
-
-    .fact-box {
-        border: 1px solid #000 !important;
-    }
-}
-</style>
 
 <div class="container-fluid mt-4 nota-wrapper">
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">

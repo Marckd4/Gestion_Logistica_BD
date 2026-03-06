@@ -1,0 +1,76 @@
+/* ==========================================
+   ESTILOS PARA NOTAS DE VENTA
+   ========================================== */
+
+.nota-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.data-label {
+    color: #495057;
+    font-weight: 600;
+}
+
+.data-value {
+    color: #212529;
+}
+
+.fact-box {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 14px;
+    height: 100%;
+    background: #fff;
+}
+
+.fact-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #1f2d3d;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 8px;
+}
+
+.fact-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    column-gap: 12px;
+    padding: 4px 0;
+    align-items: start;
+}
+
+.fact-key {
+    color: #495057;
+    font-weight: 600;
+}
+
+.fact-val {
+    color: #212529;
+    word-break: break-word;
+}
+
+.table-nota {
+    min-width: 1250px;
+}
+
+.table-nota th,
+.table-nota td {
+    vertical-align: middle;
+}
+
+.col-nowrap {
+    white-space: nowrap;
+}
+
+.col-wrap {
+    white-space: normal;
+    word-break: break-word;
+    min-width: 260px;
+}
+
+.col-number {
+    text-align: right;
+    white-space: nowrap;
+}

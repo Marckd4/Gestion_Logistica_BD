@@ -1,43 +1,11 @@
 {% extends "base.html" %}
-{% block content %}
+{% load static %}
 
-<style>
-@media print {
-    .no-print {
-        display: none !important;
-    }
-    
-    body {
-        background: white !important;
-    }
-    
-    .card {
-        border: 1px solid #000 !important;
-        box-shadow: none !important;
-        page-break-inside: avoid;
-    }
-    
-    .card-header {
-        background-color: #f8f9fa !important;
-        color: #000 !important;
-        border-bottom: 1px solid #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    .table {
-        border: 1px solid #000 !important;
-    }
-    
-    .table th, .table td {
-        border: 1px solid #000 !important;
-    }
-    
-    .container {
-        max-width: 100% !important;
-    }
-}
-</style>
+{% block extra_css %}
+<link href="{% static 'css/print-styles.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
 
 <div style="text-align: left;" class="mb-3 no-print">
     <a href="{% url 'status_pedido' %}" class="btn-volver">⬅ Volver</a>
@@ -207,97 +175,9 @@
 </div>
 
 <script>
-function descargarPDF(notaId) {
-    const url = `{% url 'descargar_picking_pdf' 0 %}`.replace('0', notaId);
-    const btnDownload = event.target;
-    const btnText = btnDownload.textContent;
-    
-    // Feedback visual: cambiar texto del botón
-    btnDownload.disabled = true;
-    btnDownload.textContent = 'Descargando...';
-    
-    // Crear un enlace temporal para descargar
-    fetch(url, {
-        method: 'GET',
-        credentials: 'same-origin', // Incluir cookies de sesión
-        headers: {
-            'Accept': 'application/pdf',
-        }
-    })
-        .then(response => {
-            // Verificar si hay redirección (302, etc)
-            if (response.status >= 300 && response.status < 400) {
-                throw new Error(`Error de redirección: ${response.status}. Posiblemente sesión expirada.`);
-            }
-            
-            if (!response.ok) {
-                throw new Error(`Error en descarga: ${response.status} ${response.statusText}`);
-            }
-            
-            return response.blob();
-        })
-        .then(blob => {
-            // Verificar que sea un PDF válido
-            if (blob.type !== 'application/pdf') {
-                throw new Error('La respuesta no es un PDF válido');
-            }
-            
-            // Crear un objeto URL para el blob
-            const urlBlob = window.URL.createObjectURL(blob);
-            
-            // Crear un enlace temporal e iniciar descarga
-            const agreLink = document.createElement('a');
-            agreLink.href = urlBlob;
-            agreLink.download = `picking_nota_${notaId}.pdf`;
-            document.body.appendChild(agreLink);
-            agreLink.click();
-            
-            // Limpiar
-            document.body.removeChild(agreLink);
-            window.URL.revokeObjectURL(urlBlob);
-            
-            // Restaurar botón
-            btnDownload.disabled = false;
-            btnDownload.textContent = btnText;
-        })
-        .catch(error => {
-            console.error('Error descargando PDF:', error);
-            alert(`Error al descargar el PDF: ${error.message}`);
-            
-            // Restaurar botón
-            btnDownload.disabled = false;
-            btnDownload.textContent = btnText;
-        });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Script para bloquear el botón "Término de Picking" cuando se presiona
-    const btnTerminoPicking = document.getElementById('btn-termino-picking');
-    const formaTerminoPicking = document.getElementById('termino-picking-form');
-    
-    if (btnTerminoPicking && formaTerminoPicking) {
-                // Si el botón ya está deshabilitado (nota despachada), no agregar el event listener
-                if (btnTerminoPicking.disabled) {
-                    return;
-                }
-        
-        formaTerminoPicking.addEventListener('submit', function(e) {
-            // Bloquear el botón cuando se envía el formulario
-            btnTerminoPicking.disabled = true;
-               btnTerminoPicking.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
-           
-               // Agregar un timeout para evitar que se quede en "Procesando indefinidamente
-               setTimeout(function() {
-                   if (!document.body.classList.contains('form-submitted')) {
-                       btnTerminoPicking.disabled = false;
-                       btnTerminoPicking.innerHTML = 'Término de Picking';
-                   }
-               }, 30000); // 30 segundos timeout
-           
-               document.body.classList.add('form-submitted');
-        });
-    }
-});
+// Configurar URL para descarga de PDF
+window.DESCARGAR_PICKING_PDF_URL = "{% url 'descargar_picking_pdf' 0 %}";
 </script>
+<script src="{% static 'js/picking-controls.js' %}" defer></script>
 
 {% endblock %}

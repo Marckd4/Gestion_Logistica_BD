@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
 
@@ -52,15 +53,16 @@
     <button id="nextPage" type="button" class="btn btn-outline-secondary btn-sm">Siguiente</button>
 </div>
 
+<script src="{% static 'js/pagination.js' %}" defer></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const rowsPerPage = 15;
     const tbody = document.querySelector("#dataTable tbody");
     const rows = Array.from(tbody.querySelectorAll("tr"));
     const prevBtn = document.getElementById("prevPage");
     const nextBtn = document.getElementById("nextPage");
     const pageInfo = document.getElementById("pageInfo");
 
+    const rowsPerPage = 15;
     let currentPage = 1;
     const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
 

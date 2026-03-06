@@ -1,4 +1,5 @@
 {% extends 'base.html'%}
+{% load static %}
 
 {% block content %}
 
@@ -114,125 +115,68 @@
 <!-- PAGINACIÓN FUERA DE LA TABLA -->
 <div id="pagination" class="mt-3 d-flex gap-2 justify-content-center"></div>
 
+<script src="{% static 'js/pagination.js' %}" defer></script>
+<script src="{% static 'js/table-filters.js' %}" defer></script>
 <script>
-const rowsPerPage = 10;
-let currentPage = 1;
+document.addEventListener("DOMContentLoaded", function() {
+    // Inicializar paginación
+    const pagination = new TablePagination('dataTable', 'pagination', 10);
+    pagination.init();
+    
+    // Configurar filtros personalizados para BSF
+    const searchInput = document.getElementById("searchInput");
+    const pedidoFilter = document.getElementById("pedidoFilter");
+    const clearBtn = document.getElementById("clearFilters");
+    const table = document.getElementById("dataTable");
+    const rows = Array.from(table.tBodies[0].rows);
+    
+    // Cargar pedidos únicos en el select
+    function cargarPedidos() {
+        const pedidos = new Set();
+        rows.forEach(row => {
+            const pedido = row.cells[3].innerText.trim();
+            if (pedido) pedidos.add(pedido);
+        });
+        [...pedidos].sort().forEach(pedido => {
+            const option = document.createElement("option");
+            option.value = pedido.toLowerCase();
+            option.textContent = pedido;
+            pedidoFilter.appendChild(option);
+        });
+    }
+    
+    // Filtrar por búsqueda y pedido
+    function filterRows() {
+        const texto = searchInput.value.toLowerCase();
+        const pedidoSeleccionado = pedidoFilter.value;
 
-const searchInput = document.getElementById("searchInput");
-const pedidoFilter = document.getElementById("pedidoFilter");
-const clearBtn = document.getElementById("clearFilters");
-const table = document.getElementById("dataTable");
-const rows = Array.from(table.tBodies[0].rows);
-const paginationContainer = document.getElementById("pagination");
+        const filtered = rows.filter(row => {
+            const textoFila = row.innerText.toLowerCase();
+            const pedidoFila = row.cells[3].innerText.toLowerCase();
+            return textoFila.includes(texto) &&
+                   (pedidoSeleccionado === "" || pedidoFila === pedidoSeleccionado);
+        });
 
-// =======================
-// CARGAR PEDIDOS ÚNICOS
-// =======================
-function cargarPedidos() {
-    const pedidos = new Set();
-
-    rows.forEach(row => {
-        const pedido = row.cells[3].innerText.trim();
-        if (pedido) pedidos.add(pedido);
-    });
-
-    [...pedidos].sort().forEach(pedido => {
-        const option = document.createElement("option");
-        option.value = pedido.toLowerCase();
-        option.textContent = pedido;
-        pedidoFilter.appendChild(option);
-    });
-}
-
-// =======================
-// FILTRO COMBINADO
-// =======================
-function filterRows() {
-    const texto = searchInput.value.toLowerCase();
-    const pedidoSeleccionado = pedidoFilter.value;
-
-    const filtered = rows.filter(row => {
-        const textoFila = row.innerText.toLowerCase();
-        const pedidoFila = row.cells[3].innerText.toLowerCase();
-
-        return textoFila.includes(texto) &&
-               (pedidoSeleccionado === "" || pedidoFila === pedidoSeleccionado);
-    });
-
-    currentPage = 1;
-    displayPage(filtered);
-    setupPagination(filtered);
-}
-
-// =======================
-// LIMPIAR FILTROS
-// =======================
-function limpiarFiltros() {
-    searchInput.value = "";
-    pedidoFilter.value = "";
-    currentPage = 1;
-
-    displayPage(rows);
-    setupPagination(rows);
-}
-
-// =======================
-// MOSTRAR FILAS
-// =======================
-function displayPage(filteredRows) {
-    rows.forEach(row => row.style.display = "none");
-
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-
-    filteredRows.slice(start, end).forEach(row => {
-        row.style.display = "";
-    });
-}
-
-// =======================
-// PAGINACIÓN
-// =======================
-function setupPagination(filteredRows) {
-    const totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
-
-    paginationContainer.innerHTML = `
-        <button class="btn btn-primary btn-sm" id="prevBtn" ${currentPage===1?'disabled':''}>Anterior</button>
-        <span class="p-2">Página ${currentPage} de ${totalPages}</span>
-        <button class="btn btn-primary btn-sm" id="nextBtn" ${currentPage===totalPages?'disabled':''}>Siguiente</button>
-    `;
-
-    document.getElementById("prevBtn").onclick = () => {
-        if (currentPage > 1) {
-            currentPage--;
-            displayPage(filteredRows);
-            setupPagination(filteredRows);
-        }
-    };
-
-    document.getElementById("nextBtn").onclick = () => {
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayPage(filteredRows);
-            setupPagination(filteredRows);
-        }
-    };
-}
-
-// =======================
-// EVENTOS
-// =======================
-searchInput.addEventListener("keyup", filterRows);
-pedidoFilter.addEventListener("change", filterRows);
-clearBtn.addEventListener("click", limpiarFiltros);
-
-// =======================
-// INICIO
-// =======================
-cargarPedidos();
-displayPage(rows);
-setupPagination(rows);
+        pagination.currentPage = 1;
+        pagination.displayPage(filtered);
+        pagination.setupPagination(filtered);
+    }
+    
+    // Limpiar filtros
+    function limpiarFiltros() {
+        searchInput.value = "";
+        pedidoFilter.value = "";
+        pagination.reset();
+        pagination.displayPage();
+        pagination.setupPagination();
+    }
+    
+    searchInput.addEventListener("keyup", filterRows);
+    pedidoFilter.addEventListener("change", filterRows);
+    clearBtn.addEventListener("click", limpiarFiltros);
+    
+    cargarPedidos();
+});
 </script>
-
 
 {% endblock %}

@@ -1,0 +1,51 @@
+/* ==========================================
+   ESTILOS PARA IMPRESIÓN Y PDF
+   ========================================== */
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        border-bottom: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .table {
+        border: 1px solid #000 !important;
+    }
+    
+    .table th, .table td {
+        border: 1px solid #000 !important;
+    }
+    
+    .container {
+        max-width: 100% !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    .table-nota {
+        min-width: 100% !important;
+    }
+
+    .fact-box {
+        border: 1px solid #000 !important;
+    }
+}
