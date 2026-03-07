@@ -2,6 +2,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import ensure_csrf_cookie
 from functools import wraps
 
 from bodegacentral.forms import CentralForm
@@ -215,6 +217,129 @@ def buscar_producto(request):
             })
 
     return JsonResponse({"resultados": resultados})
+
+
+@login_required
+@require_module_permission('bodegacentral', 'view')
+@ensure_csrf_cookie
+def cambio_ubicacion(request):
+    return render(request, 'bodegacentral/cambio_ubicacion.html')
+
+
+@login_required
+@require_module_permission('bodegacentral', 'view')
+@require_GET
+def buscar_por_ubicacion(request):
+    ubicacion = request.GET.get('ubicacion', '').strip()
+    if not ubicacion:
+        return JsonResponse({'ok': False, 'message': 'Debes ingresar una ubicacion.'}, status=400)
+
+    productos = Central.objects.filter(ubicacion__iexact=ubicacion)
+    if not productos.exists():
+        return JsonResponse({'ok': False, 'message': 'No se encontraron productos en esa ubicacion.'}, status=404)
+
+    lista_productos = []
+    for p in productos:
+        lista_productos.append({
+            'id': p.id,
+            'cod_dun': p.cod_dun or '',
+            'cod_ean': p.cod_ean or '',
+            'cod_sistema': p.cod_sistema or '',
+            'descripcion': p.descripcion or '',
+            'cajas': p.cajas if p.cajas is not None else 0,
+            'ubicacion': p.ubicacion or '',
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'productos': lista_productos
+    })
+
+
+@login_required
+@require_module_permission('bodegacentral', 'edit')
+@require_POST
+def mover_producto(request):
+    from django.db import transaction
+    
+    producto_id = request.POST.get('producto_id', '').strip()
+    cantidad_mover = request.POST.get('cantidad_mover', '').strip()
+    nueva_ubicacion = request.POST.get('nueva_ubicacion', '').strip()
+
+    if not producto_id:
+        return JsonResponse({'ok': False, 'message': 'Producto invalido.'}, status=400)
+
+    if not cantidad_mover or not cantidad_mover.isdigit():
+        return JsonResponse({'ok': False, 'message': 'Cantidad invalida.'}, status=400)
+    
+    cantidad_mover = int(cantidad_mover)
+    if cantidad_mover <= 0:
+        return JsonResponse({'ok': False, 'message': 'La cantidad debe ser mayor a 0.'}, status=400)
+
+    if not nueva_ubicacion:
+        return JsonResponse({'ok': False, 'message': 'Debes ingresar la nueva ubicacion.'}, status=400)
+
+    producto_origen = Central.objects.filter(id=producto_id).first()
+    if not producto_origen:
+        return JsonResponse({'ok': False, 'message': 'Producto no encontrado.'}, status=404)
+
+    if producto_origen.cajas is None or producto_origen.cajas < cantidad_mover:
+        return JsonResponse({'ok': False, 'message': f'No hay suficientes cajas. Disponible: {producto_origen.cajas or 0}'}, status=400)
+
+    try:
+        with transaction.atomic():
+            # Restar cajas del origen
+            producto_origen.cajas -= cantidad_mover
+            if producto_origen.stock_fisico:
+                producto_origen.stock_fisico = producto_origen.cajas * (producto_origen.factorx or 1)
+            
+            if producto_origen.cajas == 0:
+                producto_origen.delete()
+            else:
+                producto_origen.save()
+
+            # Buscar si existe el mismo producto en la nueva ubicacion
+            producto_destino = Central.objects.filter(
+                cod_sistema=producto_origen.cod_sistema,
+                ubicacion__iexact=nueva_ubicacion
+            ).first()
+
+            if producto_destino:
+                # Sumar cajas al destino existente
+                producto_destino.cajas = (producto_destino.cajas or 0) + cantidad_mover
+                if producto_destino.stock_fisico is not None:
+                    producto_destino.stock_fisico = producto_destino.cajas * (producto_destino.factorx or 1)
+                producto_destino.save()
+            else:
+                # Crear nuevo registro en la nueva ubicacion
+                Central.objects.create(
+                    categoria=producto_origen.categoria,
+                    empresa=producto_origen.empresa,
+                    ubicacion=nueva_ubicacion,
+                    cod_ean=producto_origen.cod_ean,
+                    cod_dun=producto_origen.cod_dun,
+                    cod_sistema=producto_origen.cod_sistema,
+                    descripcion=producto_origen.descripcion,
+                    unidad=producto_origen.unidad,
+                    pack=producto_origen.pack,
+                    factorx=producto_origen.factorx,
+                    cajas=cantidad_mover,
+                    saldo=producto_origen.saldo,
+                    stock_fisico=cantidad_mover * (producto_origen.factorx or 1) if producto_origen.factorx else None,
+                    observacion=producto_origen.observacion,
+                    fecha_inv=producto_origen.fecha_inv,
+                    encargado=producto_origen.encargado,
+                    fecha_venc=producto_origen.fecha_venc,
+                    fecha_imp=producto_origen.fecha_imp,
+                    numero_contenedor=producto_origen.numero_contenedor,
+                )
+
+        return JsonResponse({
+            'ok': True,
+            'message': f'Se movieron {cantidad_mover} cajas a {nueva_ubicacion} correctamente.',
+        })
+    except Exception as e:
+        return JsonResponse({'ok': False, 'message': f'Error al mover producto: {str(e)}'}, status=500)
 
 
 

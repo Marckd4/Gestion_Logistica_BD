@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+
+{% block title %}Cambio Ubicacion - Bodega Central{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<style>
+  .wms-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .wms-card {
+    border: 1px solid #d8dde5;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .wms-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #113c5a;
+    margin-bottom: 14px;
+  }
+
+  .wms-label {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .wms-input {
+    min-height: 56px;
+    font-size: 1.2rem;
+    border-radius: 10px;
+  }
+
+  .wms-btn {
+    min-height: 62px;
+    width: 100%;
+    font-size: 1.25rem;
+    font-weight: 700;
+    border-radius: 12px;
+  }
+
+  .status-box {
+    min-height: 56px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .status-ok {
+    background: #d9fbe8;
+    color: #0a5a33;
+    border: 1px solid #a8efc7;
+  }
+
+  .status-error {
+    background: #fde2e2;
+    color: #8b1d1d;
+    border: 1px solid #f7b5b5;
+  }
+
+  .tabla-productos {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  .tabla-productos thead {
+    background: #f4f7fb;
+  }
+
+  .tabla-productos th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 700;
+    border-bottom: 2px solid #d8dde5;
+    font-size: 0.95rem;
+  }
+
+  .tabla-productos td {
+    padding: 12px;
+    border-bottom: 1px solid #e8ecf0;
+    font-size: 0.92rem;
+  }
+
+  .tabla-productos tbody tr {
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .tabla-productos tbody tr:hover {
+    background: #f9fbfc;
+  }
+
+  .tabla-productos tbody tr.seleccionado {
+    background: #e3f2fd;
+    border-left: 4px solid #1976d2;
+  }
+
+  .panel-mover {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: #f9fbfc;
+    border-radius: 10px;
+    border: 2px dashed #a8b8c8;
+  }
+
+  .panel-mover.activo {
+    display: block;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wms-wrapper">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Cambio de ubicacion - Bodega Central</h2>
+    <a href="{% url 'index' %}" class="btn btn-outline-secondary">Volver</a>
+  </div>
+
+  <section class="wms-card">
+    <h3 class="wms-title">Escanear ubicacion actual</h3>
+    <div class="mb-3">
+      <label class="wms-label" for="ubicacionActual">Ubicacion actual</label>
+      <input id="ubicacionActual" type="text" class="form-control wms-input" placeholder="Escanea o ingresa ubicacion actual" autocomplete="off" autofocus>
+    </div>
+
+    <div id="tablaContainer" style="display:none;">
+      <h4 class="wms-title" style="font-size: 1.1rem; margin-top: 20px;">Productos en esta ubicacion</h4>
+      <div style="overflow-x: auto;">
+        <table class="tabla-productos">
+          <thead>
+            <tr>
+              <th>Seleccionar</th>
+              <th>Codigo DUN</th>
+              <th>Codigo EAN</th>
+              <th>Codigo Sistema</th>
+              <th>Descripcion</th>
+              <th>Cajas</th>
+              <th>Ubicacion</th>
+            </tr>
+          </thead>
+          <tbody id="tablaProductos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="panelMover" class="panel-mover">
+    <h3 class="wms-title" style="font-size: 1.2rem;">Mover producto seleccionado</h3>
+    
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="wms-label" for="cantidadMover">Cantidad de cajas a mover</label>
+        <input id="cantidadMover" type="number" min="1" class="form-control wms-input" placeholder="Ej: 5">
+      </div>
+      <div class="col-md-4">
+        <label class="wms-label" for="nuevaUbicacion">Nueva ubicacion</label>
+        <input id="nuevaUbicacion" type="text" class="form-control wms-input" placeholder="Escanea nueva ubicacion" autocomplete="off">
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button id="btnMover" class="btn btn-success wms-btn" type="button">Mover Producto</button>
+      </div>
+    </div>
+
+    <div id="estadoOperacion" class="status-box mt-3" style="display:none;"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const ubicacionActualInput = document.getElementById('ubicacionActual');
+  const tablaContainer = document.getElementById('tablaContainer');
+  const tablaProductos = document.getElementById('tablaProductos');
+  const panelMover = document.getElementById('panelMover');
+  const cantidadMoverInput = document.getElementById('cantidadMover');
+  const nuevaUbicacionInput = document.getElementById('nuevaUbicacion');
+  const btnMover = document.getElementById('btnMover');
+  const estadoOperacion = document.getElementById('estadoOperacion');
+
+  let productoSeleccionado = null;
+  let ubicacionActual = '';
+
+  function obtenerCsrfToken() {
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    if (tokenMeta) {
+      return tokenMeta.getAttribute('content');
+    }
+    
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, 10) === 'csrftoken=') {
+          cookieValue = decodeURIComponent(cookie.substring(10));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function mostrarEstado(mensaje, ok) {
+    estadoOperacion.style.display = 'flex';
+    estadoOperacion.textContent = mensaje;
+    estadoOperacion.classList.remove('status-ok', 'status-error');
+    estadoOperacion.classList.add(ok ? 'status-ok' : 'status-error');
+  }
+
+  function limpiarTabla() {
+    tablaProductos.innerHTML = '';
+    tablaContainer.style.display = 'none';
+    panelMover.classList.remove('activo');
+    productoSeleccionado = null;
+  }
+
+  function seleccionarProducto(producto) {
+    productoSeleccionado = producto;
+    
+    document.querySelectorAll('.tabla-productos tbody tr').forEach(tr => {
+      tr.classList.remove('seleccionado');
+    });
+    
+    const fila = document.querySelector(`tr[data-producto-id="${producto.id}"]`);
+    if (fila) {
+      fila.classList.add('seleccionado');
+    }
+
+    panelMover.classList.add('activo');
+    cantidadMoverInput.max = producto.cajas;
+    cantidadMoverInput.value = producto.cajas;
+    cantidadMoverInput.focus();
+  }
+
+  async function buscarPorUbicacion() {
+    const ubicacion = ubicacionActualInput.value.trim();
+    if (!ubicacion) {
+      limpiarTabla();
+      return;
+    }
+
+    ubicacionActual = ubicacion;
+
+    try {
+      const response = await fetch(`{% url 'buscar_por_ubicacion_central' %}?ubicacion=${encodeURIComponent(ubicacion)}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        limpiarTabla();
+        mostrarEstado(data.message || 'No se encontraron productos.', false);
+        return;
+      }
+
+      tablaProductos.innerHTML = '';
+      data.productos.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-producto-id', p.id);
+        tr.innerHTML = `
+          <td><button class="btn btn-sm btn-primary" type="button">Seleccionar</button></td>
+          <td>${p.cod_dun}</td>
+          <td>${p.cod_ean}</td>
+          <td>${p.cod_sistema}</td>
+          <td>${p.descripcion}</td>
+          <td><strong>${p.cajas}</strong></td>
+          <td>${p.ubicacion}</td>
+        `;
+        
+        tr.addEventListener('click', () => seleccionarProducto(p));
+        tablaProductos.appendChild(tr);
+      });
+
+      tablaContainer.style.display = 'block';
+      mostrarEstado(`Se encontraron ${data.productos.length} producto(s) en esta ubicacion.`, true);
+    } catch (error) {
+      limpiarTabla();
+      mostrarEstado('Error de conexion al buscar la ubicacion.', false);
+    }
+  }
+
+  async function moverProducto() {
+    if (!productoSeleccionado) {
+      mostrarEstado('Debes seleccionar un producto de la tabla.', false);
+      return;
+    }
+
+    const cantidad = parseInt(cantidadMoverInput.value);
+    if (!cantidad || cantidad <= 0) {
+      mostrarEstado('Debes ingresar una cantidad valida.', false);
+      cantidadMoverInput.focus();
+      return;
+    }
+
+    if (cantidad > productoSeleccionado.cajas) {
+      mostrarEstado(`No puedes mover mas de ${productoSeleccionado.cajas} cajas.`, false);
+      cantidadMoverInput.focus();
+      return;
+    }
+
+    const nuevaUbicacion = nuevaUbicacionInput.value.trim();
+    if (!nuevaUbicacion) {
+      mostrarEstado('Debes ingresar la nueva ubicacion.', false);
+      nuevaUbicacionInput.focus();
+      return;
+    }
+
+    const csrfToken = obtenerCsrfToken();
+    if (!csrfToken) {
+      mostrarEstado('Error: No se pudo obtener el token de seguridad. Recarga la pagina.', false);
+      return;
+    }
+
+    const formData = new URLSearchParams();
+    formData.append('producto_id', productoSeleccionado.id);
+    formData.append('cantidad_mover', cantidad);
+    formData.append('nueva_ubicacion', nuevaUbicacion);
+
+    try {
+      const response = await fetch("{% url 'mover_producto_central' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData.toString()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        mostrarEstado(data.message || 'No se pudo mover el producto.', false);
+        return;
+      }
+
+      mostrarEstado(data.message, true);
+      
+      setTimeout(() => {
+        ubicacionActualInput.value = ubicacionActual;
+        cantidadMoverInput.value = '';
+        nuevaUbicacionInput.value = '';
+        limpiarTabla();
+        buscarPorUbicacion();
+      }, 1500);
+    } catch (error) {
+      mostrarEstado('Error de conexion al mover producto.', false);
+    }
+  }
+
+  ubicacionActualInput.addEventListener('change', buscarPorUbicacion);
+  ubicacionActualInput.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      buscarPorUbicacion();
+    }
+  });
+
+  nuevaUbicacionInput.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      moverProducto();
+    }
+  });
+
+  btnMover.addEventListener('click', moverProducto);
+})();
+</script>
+{% endblock %}

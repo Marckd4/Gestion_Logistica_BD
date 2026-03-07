@@ -13,6 +13,26 @@
     border-bottom: 3px solid #82ccdd;
 }
 
+.erp-page-wrapper {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.erp-navbar-inner,
+.erp-container {
+    width: min(1400px, 100% - 2rem);
+    margin: 0 auto;
+}
+
+.erp-navbar-content {
+    gap: 0.75rem;
+}
+
+.erp-navbar-actions {
+    flex-wrap: wrap;
+}
+
 .erp-navbar .navbar-brand {
     font-weight: 700;
     font-size: 1.5rem;
@@ -58,9 +78,7 @@
 /* CONTENEDOR GENERAL */
 /* ============================= */
 .erp-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0;
 }
 
 /* ============================= */
@@ -327,12 +345,29 @@
 /* RESPONSIVE */
 /* ============================= */
 @media (max-width: 768px) {
+    .erp-navbar-inner,
+    .erp-container {
+        width: min(100%, calc(100% - 1rem));
+    }
+
+    .erp-navbar-content {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .erp-navbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .erp-navbar .navbar-brand {
+        font-size: 1.1rem;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
     .erp-title {
         font-size: 1.5rem;
-    }
-    
-    .erp-container {
-        padding: 0 0.75rem;
     }
 
     .erp-header {
@@ -352,7 +387,14 @@
     }
 
     .erp-navbar {
-        margin: 0 -0.75rem 1.5rem -0.75rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .erp-navbar-inner,
+    .erp-container {
+        width: min(100%, calc(100% - 1.5rem));
     }
 }
 
