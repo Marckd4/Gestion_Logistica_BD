@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}ERP - Gestión Logística{% endblock %}
+{% block title %}Gestión Logística{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/erp-dashboard.css' %}" rel="stylesheet">
@@ -13,7 +13,134 @@
 
 {% block content %}
 
-<!-- NAVBAR MODERNO -->
+<style>
+    .erp-container {
+        padding-bottom: 0.75rem;
+    }
+
+    .sidebar-shell {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 0.9rem;
+        align-items: start;
+    }
+
+    .sidebar-card {
+        position: sticky;
+        top: 0.75rem;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .sidebar-title {
+        font-weight: 700;
+        color: #0a3d62;
+    }
+
+    .sidebar-nav .list-group-item {
+        border: none;
+        border-radius: 10px;
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+        color: #2c3e50;
+        padding: 0.62rem 0.8rem;
+    }
+
+    .sidebar-nav .list-group-item.active {
+        background: linear-gradient(135deg, #0a3d62 0%, #1f4e79 100%);
+        color: #ffffff;
+    }
+
+    .module-panel {
+        min-height: 0;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #e8eef6;
+        border-radius: 12px;
+        padding: 0.9rem;
+    }
+
+    .module-title {
+        color: #0a3d62;
+        font-weight: 700;
+        margin-bottom: 0.85rem;
+    }
+
+    .module-panel .card-erp .erp-header span {
+        word-break: break-word;
+    }
+
+    .module-panel .card-erp {
+        overflow: hidden;
+    }
+
+    .module-panel .row {
+        margin-bottom: 0;
+    }
+
+    @media (max-width: 1199.98px) and (min-width: 992px) {
+        .sidebar-shell {
+            grid-template-columns: 245px 1fr;
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .sidebar-shell {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .sidebar-card {
+            position: static;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 0.5rem;
+            padding-bottom: 0.25rem;
+            scrollbar-width: thin;
+        }
+
+        .sidebar-nav .list-group-item {
+            white-space: nowrap;
+            margin-bottom: 0;
+        }
+
+        .module-panel {
+            min-height: auto;
+            padding: 0.7rem;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .erp-container {
+            padding-bottom: 0.5rem;
+        }
+
+        .erp-title {
+            font-size: 1.35rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .module-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .sidebar-nav .list-group-item {
+            font-size: 0.92rem;
+            padding: 0.55rem 0.75rem;
+        }
+
+        .module-panel {
+            padding: 0.6rem;
+            border-radius: 10px;
+        }
+    }
+</style>
+
 <nav class="erp-navbar">
     <div class="erp-navbar-inner">
         <div class="erp-navbar-content d-flex justify-content-between align-items-center">
@@ -35,190 +162,156 @@
     </div>
 </nav>
 
-<!-- CONTENEDOR PRINCIPAL -->
 <div class="erp-container">
-    
-    <!-- TITULO -->
     <div class="mb-4">
         <h1 class="erp-title">
             <i class="bi bi-speedometer2"></i>
             Panel de Control
         </h1>
-        <p class="erp-subtitle"></p>
     </div>
 
-    <!-- GRID DE MÓDULOS -->
-    <div class="row g-4">
-
-        <!-- INICIO -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp dark h-100"
-                 onclick="location.href='{% url 'inicio' %}'">
-                <div class="erp-header">
-                    <i class="bi bi-house-door-fill erp-icon"></i>
-                    <span>Inicio</span>
-                </div>
-                <div class="erp-description">
-                    Acceso rápido a la pantalla principal del sistema.
-                </div>
-            </div>
-        </div>
-
-        <!-- BODEGA LINGUES -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp primary h-100">
-                <div class="erp-header"
-                     onclick="toggleMenu('linguesMenu')" style="cursor: pointer;">
-                    <i class="bi bi-box-seam-fill erp-icon"></i>
-                    <span>Bodega Lingues</span>
-                </div>
-                <div class="erp-description" onclick="toggleMenu('linguesMenu')" style="cursor: pointer;">
-                    <i class="bi bi-chevron-down" style="font-size: 14px;"></i>
-                    Clic para ver opciones
-                </div>
-                <div class="erp-dropdown" id="linguesMenu">
-                    <a href="{% url 'index' %}"><i class="bi bi-box-seam"></i> Inventario</a>
-                    <a href="{% url 'formulariocentral' %}"><i class="bi bi-arrow-down-circle"></i> Ingreso</a>
-                    <a href="{% url 'cambio_ubicacion_central' %}"><i class="bi bi-arrow-left-right"></i> Cambio de Ubicación Bodega Central</a>
-                    <a href="{% url 'exportar_excel_productos' %}"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
-                    <a href="{% url 'resumen_central' %}"><i class="bi bi-table"></i> Toma de Inventario</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- BODEGA BSF -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp primary h-100">
-                <div class="erp-header"
-                     onclick="toggleMenu('bsfMenu')" style="cursor: pointer;">
-                    <i class="bi bi-buildings-fill erp-icon"></i>
-                    <span>Bodega BSF</span>
-                </div>
-                <div class="erp-description" onclick="toggleMenu('bsfMenu')" style="cursor: pointer;">
-                    <i class="bi bi-chevron-down" style="font-size: 14px;"></i>
-                    Clic para ver opciones
-                </div>
-                <div class="erp-dropdown" id="bsfMenu">
-                    <a href="{% url 'data' %}"><i class="bi bi-box-seam"></i> Inventario</a>
-                    <a href="{% url 'formulario' %}"><i class="bi bi-arrow-down-circle"></i> Ingreso</a>
-                    <a href="{% url 'cambio_ubicacion_bsf' %}"><i class="bi bi-arrow-left-right"></i> Cambio de Ubicación Bodega BSF</a>
-                    <a href="{% url 'exportar_excel' %}"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
-                    <a href="{% url 'resumen_bsf' %}"><i class="bi bi-table"></i> Toma de Inventario</a>
-                    <a href="{% url 'resumen_pedidos' %}"><i class="bi bi-receipt"></i> Solicitud de Pedidos</a>
-                    <a href="{% url 'resumen_general_pedidos' %}"><i class="bi bi-bar-chart"></i> Resumen General</a>
-                    <a href="{% url 'importar_excel' %}"><i class="bi bi-upload"></i> Importar Excel</a>
-
-                    {% if user.is_superuser %}
-                    <div style="border-top: 2px solid #f0f0f0; margin-top: 6px; padding: 0.75rem 1.2rem;">
-                        <form method="post" action="{% url 'borrar_todo_bsf' %}"
-                              onsubmit="return confirm('⚠️ Esta acción eliminará TODA la base de datos BSF. ¿Continuar?');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-danger w-100">
-                                <i class="bi bi-trash"></i> Borrar BD
-                            </button>
-                        </form>
+    <div class="sidebar-shell">
+        <aside>
+            <div class="card sidebar-card">
+                <div class="card-body">
+                    <div class="sidebar-title mb-3">Módulos</div>
+                    <div class="list-group sidebar-nav" id="sidebarModules" role="tablist" aria-orientation="vertical">
+                        <button class="list-group-item list-group-item-action active" data-bs-toggle="list" data-bs-target="#panel-inicio" type="button" role="tab">
+                            <i class="bi bi-house-door-fill me-2"></i>Inicio
+                        </button>
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-lingues" type="button" role="tab">
+                            <i class="bi bi-box-seam-fill me-2"></i>Bodega Lingues
+                        </button>
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-bsf" type="button" role="tab">
+                            <i class="bi bi-buildings-fill me-2"></i>Bodega BSF
+                        </button>
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-notas" type="button" role="tab">
+                            <i class="bi bi-receipt-cutoff me-2"></i>Notas de Venta
+                        </button>
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-quiebres" type="button" role="tab">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Quiebres de Stock
+                        </button>
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-reportes" type="button" role="tab">
+                            <i class="bi bi-bar-chart-line-fill me-2"></i>Reportes
+                        </button>
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-admin" type="button" role="tab">
+                            <i class="bi bi-gear-fill me-2"></i>Administración
+                        </button>
+                        {% if user.is_staff or user.is_superuser %}
+                        <button class="list-group-item list-group-item-action" data-bs-toggle="list" data-bs-target="#panel-usuarios" type="button" role="tab">
+                            <i class="bi bi-people-fill me-2"></i>Gestión de Usuarios
+                        </button>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             </div>
-        </div>
+        </aside>
 
-        <!-- NOTAS DE VENTA -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp success h-100">
-                <div class="erp-header"
-                     onclick="toggleMenu('notasMenu')" style="cursor: pointer;">
-                    <i class="bi bi-receipt-cutoff erp-icon"></i>
-                    <span>Notas de Venta</span>
+        <section>
+            <div class="tab-content module-panel" id="sidebarContent">
+                <div class="tab-pane fade show active" id="panel-inicio" role="tabpanel">
+                    <h4 class="module-title">Inicio</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4">
+                            <a href="{% url 'inicio' %}" class="text-decoration-none">
+                                <div class="card card-erp dark h-100">
+                                    <div class="erp-header">
+                                        <i class="bi bi-house-door-fill erp-icon"></i>
+                                        <span>Inicio</span>
+                                    </div>
+                                    <div class="erp-description">Acceso rápido a la pantalla principal del sistema.</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="erp-description" onclick="toggleMenu('notasMenu')" style="cursor: pointer;">
-                    <i class="bi bi-chevron-down" style="font-size: 14px;"></i>
-                    Clic para ver opciones
+
+                <div class="tab-pane fade" id="panel-lingues" role="tabpanel">
+                    <h4 class="module-title">Bodega Lingues</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'index' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-box-seam erp-icon"></i><span>Inventario</span></div><div class="erp-description">Consulta el inventario completo de bodega central.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'formulariocentral' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-arrow-down-circle erp-icon"></i><span>Ingreso</span></div><div class="erp-description">Registrar ingresos de productos a bodega central.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'cambio_ubicacion_central' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-arrow-left-right erp-icon"></i><span>Cambio de Ubicación Bodega Central</span></div><div class="erp-description">Mover productos entre ubicaciones internas.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'exportar_excel_productos' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-file-earmark-excel erp-icon"></i><span>Exportar Excel</span></div><div class="erp-description">Descargar inventario de central en formato Excel.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'resumen_central' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-table erp-icon"></i><span>Toma de Inventario</span></div><div class="erp-description">Control y confirmación de conteo físico.</div></div></a></div>
+                    </div>
                 </div>
-                <div class="erp-dropdown" id="notasMenu">
-                    <a href="{% url 'crear_nota' %}"><i class="bi bi-plus-circle"></i> Crear Nota</a>
-                    <a href="{% url 'status_pedido' %}"><i class="bi bi-info-circle"></i> Status de Pedido</a>
+
+                <div class="tab-pane fade" id="panel-bsf" role="tabpanel">
+                    <h4 class="module-title">Bodega BSF</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'data' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-box-seam erp-icon"></i><span>Inventario</span></div><div class="erp-description">Consulta stock disponible de la bodega BSF.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'formulario' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-arrow-down-circle erp-icon"></i><span>Ingreso</span></div><div class="erp-description">Registrar ingresos de productos en BSF.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'cambio_ubicacion_bsf' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-arrow-left-right erp-icon"></i><span>Cambio de Ubicación Bodega BSF</span></div><div class="erp-description">Mover productos entre ubicaciones BSF.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'exportar_excel' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-file-earmark-excel erp-icon"></i><span>Exportar Excel</span></div><div class="erp-description">Exportar inventario BSF a Excel.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'resumen_bsf' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-table erp-icon"></i><span>Toma de Inventario</span></div><div class="erp-description">Control de conteo físico y diferencias.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'resumen_pedidos' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-receipt erp-icon"></i><span>Solicitud de Pedidos</span></div><div class="erp-description">Revisión de solicitudes por pedido.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'resumen_general_pedidos' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-bar-chart erp-icon"></i><span>Resumen General</span></div><div class="erp-description">Vista consolidada de pedidos.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'importar_excel' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-upload erp-icon"></i><span>Importar Excel</span></div><div class="erp-description">Carga masiva de información por Excel.</div></div></a></div>
+                        {% if user.is_superuser %}
+                        <div class="col-md-6 col-xl-4">
+                            <div class="card card-erp warning h-100">
+                                <div class="erp-header">
+                                    <i class="bi bi-trash erp-icon"></i>
+                                    <span>Borrar BD</span>
+                                </div>
+                                <div class="erp-description">
+                                    <form method="post" action="{% url 'borrar_todo_bsf' %}" onsubmit="return confirm('⚠️ Esta acción eliminará TODA la base de datos BSF. ¿Continuar?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger w-100">Borrar base de datos BSF</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
+
+                <div class="tab-pane fade" id="panel-notas" role="tabpanel">
+                    <h4 class="module-title">Notas de Venta</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'crear_nota' %}" class="text-decoration-none"><div class="card card-erp success h-100"><div class="erp-header"><i class="bi bi-plus-circle erp-icon"></i><span>Crear Nota</span></div><div class="erp-description">Crear una nueva nota de venta.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'status_pedido' %}" class="text-decoration-none"><div class="card card-erp success h-100"><div class="erp-header"><i class="bi bi-info-circle erp-icon"></i><span>Status de Pedido</span></div><div class="erp-description">Seguimiento y estado de notas/pedidos.</div></div></a></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="panel-quiebres" role="tabpanel">
+                    <h4 class="module-title">Quiebres de Stock</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="/pedidos/quiebres-stock/" class="text-decoration-none"><div class="card card-erp warning h-100"><div class="erp-header"><i class="bi bi-exclamation-triangle-fill erp-icon"></i><span>Quiebres de Stock</span></div><div class="erp-description">Visualiza alertas y faltantes de inventario en pedidos.</div></div></a></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="panel-reportes" role="tabpanel">
+                    <h4 class="module-title">Reportes</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'resumen_unificado' %}" class="text-decoration-none"><div class="card card-erp dark h-100"><div class="erp-header"><i class="bi bi-pie-chart erp-icon"></i><span>Resumen General</span></div><div class="erp-description">Indicadores consolidados del sistema.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'exportar_resumen_excel' %}" class="text-decoration-none"><div class="card card-erp dark h-100"><div class="erp-header"><i class="bi bi-file-earmark-excel erp-icon"></i><span>Exportar Resumen</span></div><div class="erp-description">Descargar resumen general en Excel.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'descargar_reporte_clientes_excel' %}" class="text-decoration-none"><div class="card card-erp dark h-100"><div class="erp-header"><i class="bi bi-people erp-icon"></i><span>Descargar reporte de clientes</span></div><div class="erp-description">Exporta la base de clientes a Excel.</div></div></a></div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="panel-admin" role="tabpanel">
+                    <h4 class="module-title">Administración</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'crear_usuario' %}" class="text-decoration-none"><div class="card card-erp warning h-100"><div class="erp-header"><i class="bi bi-person-plus erp-icon"></i><span>Crear Usuario</span></div><div class="erp-description">Registrar nuevos usuarios en el sistema.</div></div></a></div>
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'dashboard' %}" class="text-decoration-none"><div class="card card-erp warning h-100"><div class="erp-header"><i class="bi bi-speedometer erp-icon"></i><span>Dashboard</span></div><div class="erp-description">Panel de administración y métricas.</div></div></a></div>
+                        {% if user.is_superuser %}
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'admin:index' %}" target="_blank" class="text-decoration-none"><div class="card card-erp warning h-100"><div class="erp-header"><i class="bi bi-shield-lock-fill erp-icon"></i><span>Admin Django</span></div><div class="erp-description">Acceso al panel administrativo de Django.</div></div></a></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if user.is_staff or user.is_superuser %}
+                <div class="tab-pane fade" id="panel-usuarios" role="tabpanel">
+                    <h4 class="module-title">Gestión de Usuarios</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6 col-xl-4"><a href="{% url 'manage_users' %}" class="text-decoration-none"><div class="card card-erp dark h-100"><div class="erp-header"><i class="bi bi-people-fill erp-icon"></i><span>Gestión de Usuarios</span></div><div class="erp-description">Gestión de accesos y permisos por módulo.</div></div></a></div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
-        </div>
-
-        <!-- QUIEBRES DE STOCK -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp warning h-100"
-                 onclick="location.href='/pedidos/quiebres-stock/'">
-                <div class="erp-header">
-                    <i class="bi bi-exclamation-triangle-fill erp-icon"></i>
-                    <span>Quiebres de Stock</span>
-                </div>
-                <div class="erp-description">
-                    Visualiza alertas y faltantes de inventario en pedidos.
-                </div>
-            </div>
-        </div>
-
-        <!-- REPORTES -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp dark h-100">
-                <div class="erp-header"
-                     onclick="toggleMenu('reportesMenu')" style="cursor: pointer;">
-                    <i class="bi bi-bar-chart-line-fill erp-icon"></i>
-                    <span>Reportes</span>
-                </div>
-                <div class="erp-description" onclick="toggleMenu('reportesMenu')" style="cursor: pointer;">
-                    <i class="bi bi-chevron-down" style="font-size: 14px;"></i>
-                    Clic para ver opciones
-                </div>
-                <div class="erp-dropdown" id="reportesMenu">
-                    <a href="{% url 'resumen_unificado' %}"><i class="bi bi-pie-chart"></i> Resumen General</a>
-                    <a href="{% url 'exportar_resumen_excel' %}"><i class="bi bi-file-earmark-excel"></i> Exportar Resumen</a>
-                    <a href="{% url 'descargar_reporte_clientes_excel' %}"><i class="bi bi-people"></i> Descargar reporte de clientes</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- ADMINISTRACIÓN -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp warning h-100">
-                <div class="erp-header"
-                     onclick="toggleMenu('adminMenu')" style="cursor: pointer;">
-                    <i class="bi bi-gear-fill erp-icon"></i>
-                    <span>Administración</span>
-                </div>
-                <div class="erp-description" onclick="toggleMenu('adminMenu')" style="cursor: pointer;">
-                    <i class="bi bi-chevron-down" style="font-size: 14px;"></i>
-                    Clic para ver opciones
-                </div>
-                <div class="erp-dropdown" id="adminMenu">
-                    <a href="{% url 'crear_usuario' %}"><i class="bi bi-person-plus"></i> Crear Usuario</a>
-                    
-                   
-                    <a href="{% url 'dashboard' %}"><i class="bi bi-speedometer"></i> Dashboard</a>
-
-                    {% if user.is_superuser %}
-                    <a href="{% url 'admin:index' %}" target="_blank">
-                        <i class="bi bi-shield-lock-fill"></i> Admin Django
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        {% if user.is_staff or user.is_superuser %}
-        <!-- USUARIO -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card card-erp dark h-100"
-                 onclick="location.href='{% url 'manage_users' %}'">
-                <div class="erp-header">
-                    <i class="bi bi-people-fill erp-icon"></i>
-                    <span>Gestión de Usuarios</span>
-                </div>
-                <div class="erp-description">
-                    Gestión de accesos y permisos por módulo.
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
+        </section>
     </div>
 </div>
 
