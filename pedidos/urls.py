@@ -17,6 +17,7 @@ urlpatterns = [
     path('ver-nota/<int:nota_id>/', views.ver_nota_venta, name='ver_nota_venta'),
     path('buscar-cliente/', views.buscar_cliente_por_rut, name='buscar_cliente_por_rut'),
     path('buscar-producto/', views.buscar_producto_por_codigo, name='buscar_producto_por_codigo'),
+    path('descargar-clientes-excel/', views.descargar_reporte_clientes_excel, name='descargar_reporte_clientes_excel'),
     path('quiebres-stock/', views.listar_quiebres_stock, name='listar_quiebres_stock'),
     path('api/estadisticas-quiebres/', views.obtener_estadisticas_quiebres, name='obtener_estadisticas_quiebres'),
     path('descargar-quiebres-excel/', views.descargar_quiebres_excel, name='descargar_quiebres_excel'),

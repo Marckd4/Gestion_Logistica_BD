@@ -1,37 +1,59 @@
 {% extends 'base.html' %}
 
+{% block title %}Toma de Inventario - Central{% endblock %}
+
 {% block content %}
 <div style="text-align: left;">
     <a href="{% url 'inicio' %}" class="btn-volver">⬅ Volver</a>
 </div>
 <br>
 
+<h4 class="fw-bold text-primary">Toma de Inventario - Bodega Central</h4>
+
 
 <input type="text" id="filtro" class="form-control mb-3" placeholder="Filtrar..." onkeyup="filtrarTabla()">
 <button class="btn btn-success mb-3" onclick="exportarExcel()">Exportar Excel</button>
 
+<div id="alertaResumenCentral" class="alert d-none" role="alert"></div>
+
 <table id="tablaCentral" class="table table-striped table-bordered">
     <thead >
         <tr>
-            <th>Cod_Dun</th>
-            <th>Cod_Ean</th>
-            <th>Cod_Sistema</th>
-            <th>Descripción</th>
-            <th>Cajas</th>
-            <th>Stock Físico</th>
-            <th>Ubicación</th>
+            <th>seleccionar</th>
+            <th>cod_dun</th>
+            <th>cod_ean</th>
+            <th>cod_sistema</th>
+            <th>descripcion</th>
+            <th>ubicacion</th>
+            <th>cajas</th>
+            <th>total_fisico</th>
+            <th>diferencia</th>
+            <th>accion</th>
         </tr>
     </thead>
     <tbody>
         {% for d in datos %}
-        <tr>
+        <tr data-id="{{ d.id }}" data-cajas="{{ d.cajas|default:0 }}">
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-secondary seleccionar-btn">Seleccionar</button>
+            </td>
             <td>{{ d.cod_dun }}</td>
             <td>{{ d.cod_ean }}</td>
             <td>{{ d.cod_sistema }}</td>
             <td>{{ d.descripcion }}</td>
-            <td>{{ d.cajas }}</td>
-            <td>{{ d.stock_fisico }}</td>
-            <td>{{ d.ubicacion }}</td>
+            <td style="min-width: 160px;">
+                <input type="text" class="form-control form-control-sm ubicacion-input editable-field" value="{{ d.ubicacion|default:'' }}" disabled>
+            </td>
+            <td style="min-width: 120px;">
+                <input type="number" min="0" class="form-control form-control-sm cajas-input editable-field" value="{{ d.cajas|default:0 }}" disabled>
+            </td>
+            <td style="min-width: 140px;">
+                <input type="number" min="0" class="form-control form-control-sm total-fisico-input editable-field" value="{{ d.stock_fisico|default:0 }}" disabled>
+            </td>
+            <td class="diferencia-cell fw-bold">0</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-primary confirmar-btn" disabled>Confirmar</button>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
@@ -39,17 +61,180 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+const csrfTokenCentral = '{{ csrf_token }}';
+const DRAFTS_KEY_CENTRAL = 'toma_inventario_central_total_fisico';
+
+function getDraftsCentral() {
+    try {
+        return JSON.parse(sessionStorage.getItem(DRAFTS_KEY_CENTRAL) || '{}');
+    } catch (_) {
+        return {};
+    }
+}
+
+function saveDraftsCentral(drafts) {
+    sessionStorage.setItem(DRAFTS_KEY_CENTRAL, JSON.stringify(drafts));
+}
+
+function setDraftCentral(id, value) {
+    const drafts = getDraftsCentral();
+    drafts[String(id)] = String(value);
+    saveDraftsCentral(drafts);
+}
+
+function getDraftCentral(id) {
+    const drafts = getDraftsCentral();
+    return drafts[String(id)];
+}
+
+function clearDraftCentral(id) {
+    const drafts = getDraftsCentral();
+    delete drafts[String(id)];
+    saveDraftsCentral(drafts);
+}
+
 function filtrarTabla() {
-    let input = document.getElementById("filtro").value.toLowerCase();
-    document.querySelectorAll("#tablaCentral tbody tr").forEach(fila => {
-        fila.classList.toggle("d-none", !fila.textContent.toLowerCase().includes(input));
+    const filtro = document.getElementById("filtro").value.toLowerCase().trim();
+
+    document.querySelectorAll("#tablaCentral tbody tr").forEach((fila) => {
+        const celdas = fila.querySelectorAll("td");
+        const codDun = (celdas[1]?.textContent || "").toLowerCase();
+        const codEan = (celdas[2]?.textContent || "").toLowerCase();
+        const codSistema = (celdas[3]?.textContent || "").toLowerCase();
+        const descripcion = (celdas[4]?.textContent || "").toLowerCase();
+        const ubicacion = (fila.querySelector('.ubicacion-input')?.value || "").toLowerCase();
+
+        const coincide =
+            codDun.includes(filtro) ||
+            codEan.includes(filtro) ||
+            codSistema.includes(filtro) ||
+            descripcion.includes(filtro) ||
+            ubicacion.includes(filtro);
+
+        fila.classList.toggle("d-none", !coincide);
     });
 }
 
+function mostrarAlertaCentral(tipo, mensaje) {
+    const alerta = document.getElementById('alertaResumenCentral');
+    alerta.className = `alert alert-${tipo}`;
+    alerta.textContent = mensaje;
+}
+
+function setFilaEditable(fila, editable) {
+    fila.querySelectorAll('.editable-field').forEach((campo) => {
+        campo.disabled = !editable;
+    });
+    const btnConfirmar = fila.querySelector('.confirmar-btn');
+    btnConfirmar.disabled = !editable;
+
+    const btnSeleccionar = fila.querySelector('.seleccionar-btn');
+    if (editable) {
+        fila.classList.add('table-primary');
+        btnSeleccionar.textContent = 'Seleccionado';
+        btnSeleccionar.classList.remove('btn-outline-secondary');
+        btnSeleccionar.classList.add('btn-secondary');
+    } else {
+        fila.classList.remove('table-primary');
+        btnSeleccionar.textContent = 'Seleccionar';
+        btnSeleccionar.classList.add('btn-outline-secondary');
+        btnSeleccionar.classList.remove('btn-secondary');
+    }
+}
+
+function seleccionarFilaCentral(filaSeleccionada) {
+    document.querySelectorAll('#tablaCentral tbody tr').forEach((fila) => {
+        setFilaEditable(fila, fila === filaSeleccionada);
+    });
+}
+
+function calcularDiferenciaFila(fila) {
+    const cajas = Number(fila.querySelector('.cajas-input').value || 0);
+    const input = fila.querySelector('.total-fisico-input');
+    const diferenciaCell = fila.querySelector('.diferencia-cell');
+    const totalFisico = Number(input.value || 0);
+    const diferencia = totalFisico - cajas;
+    diferenciaCell.textContent = diferencia;
+    diferenciaCell.classList.toggle('text-success', diferencia === 0);
+    diferenciaCell.classList.toggle('text-danger', diferencia !== 0);
+    return { cajas, totalFisico, diferencia };
+}
+
+async function confirmarFilaCentral(fila, boton) {
+    const id = fila.dataset.id;
+    const { totalFisico } = calcularDiferenciaFila(fila);
+
+    boton.disabled = true;
+    boton.textContent = 'Confirmando...';
+
+    const formData = new URLSearchParams();
+    formData.append('id', id);
+    formData.append('total_fisico', String(totalFisico));
+
+    try {
+        const response = await fetch("{% url 'confirmar_resumen_central' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                'X-CSRFToken': csrfTokenCentral,
+            },
+            body: formData.toString(),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+            throw new Error(data.message || 'No se pudo confirmar el registro.');
+        }
+
+        fila.dataset.cajas = String(data.cajas);
+        fila.querySelector('.cajas-input').value = data.cajas;
+        fila.querySelector('.total-fisico-input').value = 0;
+        clearDraftCentral(id);
+        calcularDiferenciaFila(fila);
+
+        if (data.updated) {
+            mostrarAlertaCentral('warning', 'Confirmado: se actualizo cajas con total_fisico.');
+        } else {
+            mostrarAlertaCentral('success', 'Confirmado: cajas y total_fisico coinciden.');
+        }
+    } catch (error) {
+        mostrarAlertaCentral('danger', error.message);
+    } finally {
+        boton.disabled = false;
+        boton.textContent = 'Confirmar';
+    }
+}
+
+document.querySelectorAll('#tablaCentral tbody tr').forEach((fila) => {
+    const rowId = fila.dataset.id;
+    const draftTotalFisico = getDraftCentral(rowId);
+    if (draftTotalFisico !== undefined) {
+        fila.querySelector('.total-fisico-input').value = draftTotalFisico;
+    }
+
+    calcularDiferenciaFila(fila);
+    setFilaEditable(fila, false);
+
+    const input = fila.querySelector('.total-fisico-input');
+    input.addEventListener('input', () => {
+        setDraftCentral(rowId, input.value || 0);
+        calcularDiferenciaFila(fila);
+    });
+
+    const cajasInput = fila.querySelector('.cajas-input');
+    cajasInput.addEventListener('input', () => calcularDiferenciaFila(fila));
+
+    const seleccionarBtn = fila.querySelector('.seleccionar-btn');
+    seleccionarBtn.addEventListener('click', () => seleccionarFilaCentral(fila));
+
+    const boton = fila.querySelector('.confirmar-btn');
+    boton.addEventListener('click', () => confirmarFilaCentral(fila, boton));
+});
+
 function exportarExcel() {
     let tabla = document.getElementById("tablaCentral");
-    let wb = XLSX.utils.table_to_book(tabla, { sheet: "Resumen" });
-    XLSX.writeFile(wb, "resumen_inventario.xlsx");
+    let wb = XLSX.utils.table_to_book(tabla, { sheet: "Toma Inventario Central" });
+    XLSX.writeFile(wb, "toma_inventario_central.xlsx");
 }
 </script>
 {% endblock %}

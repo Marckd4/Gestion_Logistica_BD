@@ -15,6 +15,7 @@ urlpatterns = [
     path('editar/<int:id>/', views.editar_bsf, name='editar_bsf'),
     path('eliminar/<int:id>/', views.eliminar_bsf, name='eliminar_bsf'),
     path('resumen-bsf/', views.resumen_bsf, name='resumen_bsf'),
+    path('resumen-bsf/confirmar/', views.confirmar_resumen_bsf, name='confirmar_resumen_bsf'),
     path('resumen-pedidos/', views.resumen_pedidos, name='resumen_pedidos'),
     path('resumen-pedidos/excel/', views.resumen_pedidos_excel, name='resumen_pedidos_excel'),
     path('resumen-general-pedidos/',views.resumen_general_pedidos,name='resumen_general_pedidos'),

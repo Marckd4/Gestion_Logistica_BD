@@ -14,6 +14,7 @@ urlpatterns = [
     path('editar-central/<int:id>/', views.editar_central, name='editar_central'),
     path('eliminar-central/<int:id>/', views.eliminar_central, name='eliminar_central'),
     path('resumen/', views.resumen_central, name='resumen_central'),
+    path('resumen/confirmar/', views.confirmar_resumen_central, name='confirmar_resumen_central'),
    
 
     

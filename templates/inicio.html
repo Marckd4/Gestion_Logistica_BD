@@ -81,7 +81,7 @@
                     <a href="{% url 'formulariocentral' %}"><i class="bi bi-arrow-down-circle"></i> Ingreso</a>
                     <a href="{% url 'cambio_ubicacion_central' %}"><i class="bi bi-arrow-left-right"></i> Cambio de Ubicación Bodega Central</a>
                     <a href="{% url 'exportar_excel_productos' %}"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
-                    <a href="{% url 'resumen_central' %}"><i class="bi bi-table"></i> Resumen</a>
+                    <a href="{% url 'resumen_central' %}"><i class="bi bi-table"></i> Toma de Inventario</a>
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@
                     <a href="{% url 'formulario' %}"><i class="bi bi-arrow-down-circle"></i> Ingreso</a>
                     <a href="{% url 'cambio_ubicacion_bsf' %}"><i class="bi bi-arrow-left-right"></i> Cambio de Ubicación Bodega BSF</a>
                     <a href="{% url 'exportar_excel' %}"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
-                    <a href="{% url 'resumen_bsf' %}"><i class="bi bi-table"></i> Resumen</a>
+                    <a href="{% url 'resumen_bsf' %}"><i class="bi bi-table"></i> Toma de Inventario</a>
                     <a href="{% url 'resumen_pedidos' %}"><i class="bi bi-receipt"></i> Solicitud de Pedidos</a>
                     <a href="{% url 'resumen_general_pedidos' %}"><i class="bi bi-bar-chart"></i> Resumen General</a>
                     <a href="{% url 'importar_excel' %}"><i class="bi bi-upload"></i> Importar Excel</a>
@@ -171,6 +171,7 @@
                 <div class="erp-dropdown" id="reportesMenu">
                     <a href="{% url 'resumen_unificado' %}"><i class="bi bi-pie-chart"></i> Resumen General</a>
                     <a href="{% url 'exportar_resumen_excel' %}"><i class="bi bi-file-earmark-excel"></i> Exportar Resumen</a>
+                    <a href="{% url 'descargar_reporte_clientes_excel' %}"><i class="bi bi-people"></i> Descargar reporte de clientes</a>
                 </div>
             </div>
         </div>

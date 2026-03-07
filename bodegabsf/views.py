@@ -352,6 +352,7 @@ from .models import Bsf
 @require_module_permission('bodegabsf', 'view')
 def resumen_bsf(request):
     datos = Bsf.objects.all().values(
+        "id",
         "cod_dun",
         "cod_ean",
         "cod_sistema",
@@ -361,6 +362,49 @@ def resumen_bsf(request):
         "ubicacion",
     )
     return render(request, "resumen_bsf.html", {"datos": list(datos)})
+
+
+@login_required
+@require_module_permission('bodegabsf', 'edit')
+@require_POST
+def confirmar_resumen_bsf(request):
+    item_id = (request.POST.get('id') or '').strip()
+    total_fisico_raw = (request.POST.get('total_fisico') or '').strip()
+
+    if not item_id.isdigit():
+        return JsonResponse({'ok': False, 'message': 'ID invalido.'}, status=400)
+
+    if total_fisico_raw == '' or not total_fisico_raw.lstrip('-').isdigit():
+        return JsonResponse({'ok': False, 'message': 'total_fisico debe ser un numero entero.'}, status=400)
+
+    total_fisico = int(total_fisico_raw)
+    if total_fisico < 0:
+        return JsonResponse({'ok': False, 'message': 'total_fisico no puede ser negativo.'}, status=400)
+
+    producto = Bsf.objects.filter(id=int(item_id)).first()
+    if not producto:
+        return JsonResponse({'ok': False, 'message': 'Registro no encontrado.'}, status=404)
+
+    cajas_actuales = producto.cajas or 0
+    actualizo_bd = False
+
+    if cajas_actuales != total_fisico:
+        producto.cajas = total_fisico
+        producto.save(update_fields=['cajas'])
+        actualizo_bd = True
+
+    confirmados = request.session.get('resumen_bsf_confirmados', {})
+    confirmados[str(producto.id)] = {
+        'cajas_confirmadas': total_fisico,
+    }
+    request.session['resumen_bsf_confirmados'] = confirmados
+
+    return JsonResponse({
+        'ok': True,
+        'updated': actualizo_bd,
+        'cajas': total_fisico,
+        'message': 'Registro confirmado.'
+    })
 
 
 # views.py

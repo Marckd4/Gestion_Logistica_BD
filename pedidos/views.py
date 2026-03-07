@@ -373,6 +373,56 @@ def _exportar_notas_excel(notas):
 
 
 @login_required
+@require_module_permission('pedidos', 'export')
+def descargar_reporte_clientes_excel(request):
+    import openpyxl
+    from openpyxl.styles import Font
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Clientes"
+
+    columnas = ["Nombre", "RUT", "Direccion", "Region", "Telefono", "Email"]
+    for col_num, titulo in enumerate(columnas, 1):
+        celda = ws.cell(row=1, column=col_num, value=titulo)
+        celda.font = Font(bold=True)
+
+    notas_clientes = (
+        NotaVenta.objects
+        .exclude(cliente__isnull=True).exclude(cliente='')
+        .order_by('-fecha')
+    )
+
+    vistos = set()
+    fila = 2
+
+    for nota in notas_clientes:
+        rut = (nota.rut_cliente or '').strip()
+        nombre = (nota.cliente or '').strip()
+        llave = _normalizar_rut(rut) or nombre.upper()
+
+        if not llave or llave in vistos:
+            continue
+
+        vistos.add(llave)
+
+        ws.cell(row=fila, column=1, value=nombre)
+        ws.cell(row=fila, column=2, value=rut)
+        ws.cell(row=fila, column=3, value=nota.direccion or '')
+        ws.cell(row=fila, column=4, value='')
+        ws.cell(row=fila, column=5, value=nota.telefono or '')
+        ws.cell(row=fila, column=6, value='')
+        fila += 1
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="reporte_clientes.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
 @require_module_permission('pedidos', 'view')
 def status_pedido(request):
     if request.method == 'POST':
