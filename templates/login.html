@@ -8,88 +8,200 @@
     <title>Usuarios_ChileanTrading</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
-      body {
-        /* Imagen de fondo */
-        background: url("{% static '33.png' %}") no-repeat center center fixed;
-        background-size: cover;
+        :root {
+            --glass-bg: rgba(11, 20, 38, 0.62);
+            --glass-border: rgba(255, 255, 255, 0.24);
+            --text-color: #f4f7fb;
+            --muted-color: #b8c2d6;
+            --field-bg: rgba(255, 255, 255, 0.1);
+            --field-border: rgba(255, 255, 255, 0.24);
+            --primary-a: #0ea5e9;
+            --primary-b: #2563eb;
+            --danger-soft: rgba(239, 68, 68, 0.2);
+        }
 
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-    }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            padding: 1rem;
+            color: var(--text-color);
+            background:
+                linear-gradient(145deg, rgba(3, 15, 37, 0.72), rgba(6, 30, 44, 0.66)),
+                url("{% static '33.png' %}") no-repeat center center fixed;
+            background-size: cover;
+        }
 
+        .login-wrap {
+            width: 100%;
+            max-width: 430px;
+        }
 
         .login-card {
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(12px);
-            border-radius: 15px;
-            padding: 30px;
-            width: 350px;
-            border: 1px solid rgba(255,255,255,0.30);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 22px 45px rgba(3, 10, 22, 0.45);
         }
 
-        .login-card input {
-            border-radius: 10px;
+        .login-title {
+            font-weight: 700;
+            letter-spacing: 0.2px;
         }
 
-        .login-card button {
-            border-radius: 10px;
-            font-weight: bold;
+        .login-subtitle {
+            color: var(--muted-color);
+            font-size: 0.92rem;
         }
 
-        /* Opcional: responsive en móviles */
-        @media (max-width: 400px) {
+        .form-label {
+            font-size: 0.92rem;
+            margin-bottom: 0.45rem;
+            color: #e2e8f0;
+        }
+
+        .input-group-text {
+            background: var(--field-bg);
+            border: 1px solid var(--field-border);
+            border-right: 0;
+            color: #cbd5e1;
+            border-radius: 12px 0 0 12px;
+        }
+
+        .form-control {
+            background: var(--field-bg);
+            border: 1px solid var(--field-border);
+            border-left: 0;
+            color: #ffffff;
+            border-radius: 0 12px 12px 0;
+            padding: 0.7rem 0.85rem;
+        }
+
+        .form-control::placeholder {
+            color: #c3cedf;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(56, 189, 248, 0.7);
+            box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.2);
+            color: #ffffff;
+        }
+
+        .login-btn {
+            border: 0;
+            border-radius: 12px;
+            padding: 0.72rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary-a), var(--primary-b));
+            box-shadow: 0 12px 22px rgba(37, 99, 235, 0.35);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 26px rgba(37, 99, 235, 0.4);
+        }
+
+        .create-user-btn {
+            border-radius: 12px;
+            border-color: rgba(226, 232, 240, 0.4);
+            color: #e2e8f0;
+        }
+
+        .create-user-btn:hover {
+            color: #ffffff;
+            border-color: rgba(226, 232, 240, 0.75);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .forgot-link {
+            color: #dbeafe;
+            font-size: 0.92rem;
+        }
+
+        .forgot-link:hover {
+            color: #ffffff;
+        }
+
+        .alert-login {
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            background: var(--danger-soft);
+            color: #fee2e2;
+            border-radius: 12px;
+            padding: 0.75rem 0.95rem;
+        }
+
+        @media (max-width: 576px) {
             .login-card {
-                width: 90%;
-                padding: 20px;
+                padding: 1.35rem;
+                border-radius: 16px;
+            }
+
+            .login-title {
+                font-size: 1.35rem;
             }
         }
     </style>
 </head>
 
 <body>
+<div class="login-wrap">
+    <div class="login-card">
+        <h3 class="text-center mb-1 login-title">Iniciar Sesion</h3>
+        <p class="text-center mb-4 login-subtitle">Accede con tus credenciales para continuar</p>
 
-<div class="login-card shadow-lg">
+        <form method="POST">
+            {% csrf_token %}
 
-    <h3 class="text-center mb-3">Iniciar Sesión</h3>
+            <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" name="username" class="form-control" placeholder="Ingresa tu usuario" required>
+                </div>
+            </div>
 
-    <form method="POST">
-        {% csrf_token %}
+            <div class="mb-2">
+                <label class="form-label">Contrasena</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                    <input type="password" name="password" class="form-control" placeholder="Ingresa tu contrasena" required>
+                </div>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Usuario</label>
-            <input type="text" name="username" class="form-control" required>
+            <button type="submit" class="btn login-btn w-100 mt-3">
+                Ingresar
+            </button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="{% url 'crear_usuario' %}" class="btn create-user-btn w-100">
+                Crear Usuario
+            </a>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Contraseña</label>
-            <input type="password" name="password" class="form-control" required>
+        <div class="text-center mt-2">
+            <a href="{% url 'password_reset' %}" class="forgot-link text-decoration-underline">
+                Olvide mi contrasena
+            </a>
         </div>
 
-        <button type="submit" class="btn btn-light w-100 mt-3">
-            Ingresar
-        </button>
-    </form>
-
-    <div class="text-center mt-3">
-        <a href="{% url 'crear_usuario' %}" class="btn btn-outline-light w-100">
-            Crear Usuario
-        </a>
+        {% if messages %}
+            {% for m in messages %}
+                {% if 'error' in m.tags %}
+                    <div class="alert-login mt-3 mb-0">{{ m }}</div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
     </div>
-
-    {% if messages %}
-        {% for m in messages %}
-            {% if 'error' in m.tags %}
-                <div class="alert alert-danger mt-3 mb-0">{{ m }}</div>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-
 </div>
 
 </body>

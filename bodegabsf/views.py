@@ -1,17 +1,26 @@
-
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.views.decorators.http import require_GET, require_POST
-from django.views.decorators.csrf import ensure_csrf_cookie
+from datetime import date
 from functools import wraps
 
+import openpyxl
+import pandas as pd
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import transaction
+from django.db.models import Sum
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_GET, require_POST
+from openpyxl.styles import Font
+
 from bodegabsf.forms import BsfForm
-from .models import Bsf  # importar el modelo
 from pedidos.models import UserModulePermission
 
+from .forms import ImportarExcelForm
+from .models import Bsf
 
+
+# Esta funcion valida si un usuario tiene permisos para una accion en el modulo indicado.
 def _user_has_module_permission(user, module, action):
     if user.is_superuser:
         return True
@@ -31,6 +40,7 @@ def _user_has_module_permission(user, module, action):
     return permisos.get(action, False)
 
 
+# Esta funcion construye un decorador para controlar acceso por accion y modulo.
 def require_module_permission(module, action):
     def decorator(view_func):
         @wraps(view_func)
@@ -49,55 +59,49 @@ def require_module_permission(module, action):
     return decorator
 
 
-
+# Esta funcion muestra el listado principal de productos de la bodega BSF.
 @login_required
 @require_module_permission('bodegabsf', 'view')
 def data(request):
     bsfs = Bsf.objects.all()
     return render(request, 'index.html', context={'bsfs': bsfs})
 
-# area formulario 
 
+# Esta funcion procesa el formulario basico para crear productos BSF.
 def formulario(request):
     if request.method == 'POST':
         form = BsfForm(request.POST)
         if form.is_valid():
-             form.save()
-             return HttpResponseRedirect('/bodegabsf')
+            form.save()
+            return HttpResponseRedirect('/bodegabsf')
     else:
         form = BsfForm()
-        
-        
-    return render( request, 'bsf_form.html',{'form': form})
+
+    return render(request, 'bsf_form.html', {'form': form})
 
 
-
-# area de exportar excel 
-import openpyxl
-from openpyxl.styles import Font
-from django.http import HttpResponse
-from .models import Bsf
-
+# Esta funcion limpia un valor para usarlo en exportacion de planillas.
 def limpiar(valor):
     if valor is None:
-        return ""
+        return ''
     return str(valor)
 
+
+# Esta funcion exporta el inventario BSF en formato Excel.
 @login_required
 @require_module_permission('bodegabsf', 'export')
 def exportar_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Inventario"
+    ws.title = 'Inventario'
 
     columnas = [
-        "Categoria", "Empresa", "Ubicacion", "Cod_Ean", "Cod_Dun", "Cod_Sistema",
-        "Descripcion", "Unidad", "Pack", "FactorX", "Cajas", "Saldo",
-        "Stock_Fisico", "Observacion", "Fecha_Venc", "Fecha_Imp",
-        "Fecha_Inv", "Encargado"
+        'Categoria', 'Empresa', 'Ubicacion', 'Cod_Ean', 'Cod_Dun', 'Cod_Sistema',
+        'Descripcion', 'Unidad', 'Pack', 'FactorX', 'Cajas', 'Saldo',
+        'Stock_Fisico', 'Observacion', 'Fecha_Venc', 'Fecha_Imp',
+        'Fecha_Inv', 'Encargado',
     ]
 
-    # Encabezados
     for col_num, titulo in enumerate(columnas, 1):
         cell = ws.cell(row=1, column=col_num, value=titulo)
         cell.font = Font(bold=True)
@@ -125,79 +129,67 @@ def exportar_excel(request):
         ws.cell(row=row_num, column=18, value=limpiar(item.encargado))
 
     response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response["Content-Disposition"] = 'attachment; filename=\"inventario_bodega_BSF.xlsx\"'
+    response['Content-Disposition'] = 'attachment; filename="inventario_bodega_BSF.xlsx"'
 
     wb.save(response)
     return response
 
 
-# eliminar y editar tabla 
-
-
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Bsf
-from .forms import BsfForm
-
-# ---------- EDITAR ----------
+# Esta funcion permite editar un registro existente de la tabla BSF.
 @login_required
 @require_module_permission('bodegabsf', 'edit')
 def editar_bsf(request, id):
     bsf = get_object_or_404(Bsf, id=id)
 
-    if request.method == "POST":
+    if request.method == 'POST':
         form = BsfForm(request.POST, instance=bsf)
         if form.is_valid():
             form.save()
-            return redirect('data')  # ← Ajusta al nombre de tu vista principal
+            return redirect('data')
     else:
         form = BsfForm(instance=bsf)
 
     return render(request, 'editar_bsf.html', {'form': form, 'bsf': bsf})
 
 
-# ---------- ELIMINAR ----------
+# Esta funcion confirma y ejecuta la eliminacion de un registro BSF.
 @login_required
 @require_module_permission('bodegabsf', 'delete')
 def eliminar_bsf(request, id):
     bsf = get_object_or_404(Bsf, id=id)
 
-    if request.method == "POST":
+    if request.method == 'POST':
         bsf.delete()
-        return redirect('data')   # ← Ajusta al nombre de tu vista principal
+        return redirect('data')
 
     return render(request, 'eliminar_bsf.html', {'bsf': bsf})
 
 
-
-# autocompletar del dun en formulario 
-
-from django.shortcuts import render
-from django.http import JsonResponse
-from .models import Bsf
-from .forms import BsfForm
-
+# Esta funcion maneja el formulario de creacion o edicion con soporte de instancia.
 @login_required
 @require_module_permission('bodegabsf', 'create')
 def formulario(request, id=None):
-    mensaje = ""
-    if id:  # modo edición
+    mensaje = ''
+    if id:
         instancia = Bsf.objects.get(id=id)
     else:
         instancia = None
 
-    if request.method == "POST":
+    if request.method == 'POST':
         form = BsfForm(request.POST, instance=instancia)
         if form.is_valid():
             form.save()
             return redirect('/bodegabsf')
-            mensaje = "✅ Producto guardado correctamente."
+            mensaje = 'Producto guardado correctamente.'
     else:
         form = BsfForm(instance=instancia)
 
-    return render(request, 'bsf_form.html', {"form": form, "mensaje": mensaje})
+    return render(request, 'bsf_form.html', {'form': form, 'mensaje': mensaje})
 
+
+# Esta funcion busca productos por codigo DUN para autocompletar datos.
 @login_required
 @require_module_permission('bodegabsf', 'view')
 def buscar_producto(request):
@@ -205,18 +197,19 @@ def buscar_producto(request):
     resultados = []
 
     if cod_dun:
-        productos = Bsf.objects.filter(cod_dun__icontains=cod_dun)[:10]  # máximo 10 coincidencias
+        productos = Bsf.objects.filter(cod_dun__icontains=cod_dun)[:10]
         for p in productos:
             resultados.append({
-                "cod_dun": p.cod_dun,
-                "cod_ean": p.cod_ean,
-                "cod_sistema": p.cod_sistema,
-                "descripcion": p.descripcion,
+                'cod_dun': p.cod_dun,
+                'cod_ean': p.cod_ean,
+                'cod_sistema': p.cod_sistema,
+                'descripcion': p.descripcion,
             })
 
-    return JsonResponse({"resultados": resultados})
+    return JsonResponse({'resultados': resultados})
 
 
+# Esta funcion muestra la pantalla para cambios de ubicacion con CSRF activo.
 @login_required
 @require_module_permission('bodegabsf', 'view')
 @ensure_csrf_cookie
@@ -224,6 +217,7 @@ def cambio_ubicacion(request):
     return render(request, 'bodegabsf/cambio_ubicacion.html')
 
 
+# Esta funcion retorna productos encontrados en una ubicacion especifica.
 @login_required
 @require_module_permission('bodegabsf', 'view')
 @require_GET
@@ -250,16 +244,15 @@ def buscar_por_ubicacion(request):
 
     return JsonResponse({
         'ok': True,
-        'productos': lista_productos
+        'productos': lista_productos,
     })
 
 
+# Esta funcion mueve stock entre ubicaciones de forma atomica.
 @login_required
 @require_module_permission('bodegabsf', 'edit')
 @require_POST
 def mover_producto(request):
-    from django.db import transaction
-    
     producto_id = request.POST.get('producto_id', '').strip()
     cantidad_mover = request.POST.get('cantidad_mover', '').strip()
     nueva_ubicacion = request.POST.get('nueva_ubicacion', '').strip()
@@ -269,7 +262,7 @@ def mover_producto(request):
 
     if not cantidad_mover or not cantidad_mover.isdigit():
         return JsonResponse({'ok': False, 'message': 'Cantidad invalida.'}, status=400)
-    
+
     cantidad_mover = int(cantidad_mover)
     if cantidad_mover <= 0:
         return JsonResponse({'ok': False, 'message': 'La cantidad debe ser mayor a 0.'}, status=400)
@@ -286,30 +279,26 @@ def mover_producto(request):
 
     try:
         with transaction.atomic():
-            # Restar cajas del origen
             producto_origen.cajas -= cantidad_mover
             if producto_origen.stock_fisico:
                 producto_origen.stock_fisico = producto_origen.cajas * (producto_origen.factorx or 1)
-            
+
             if producto_origen.cajas == 0:
                 producto_origen.delete()
             else:
                 producto_origen.save()
 
-            # Buscar si existe el mismo producto en la nueva ubicacion
             producto_destino = Bsf.objects.filter(
                 cod_sistema=producto_origen.cod_sistema,
-                ubicacion__iexact=nueva_ubicacion
+                ubicacion__iexact=nueva_ubicacion,
             ).first()
 
             if producto_destino:
-                # Sumar cajas al destino existente
                 producto_destino.cajas = (producto_destino.cajas or 0) + cantidad_mover
                 if producto_destino.stock_fisico is not None:
                     producto_destino.stock_fisico = producto_destino.cajas * (producto_destino.factorx or 1)
                 producto_destino.save()
             else:
-                # Crear nuevo registro en la nueva ubicacion
                 Bsf.objects.create(
                     categoria=producto_origen.categoria,
                     empresa=producto_origen.empresa,
@@ -342,28 +331,24 @@ def mover_producto(request):
         return JsonResponse({'ok': False, 'message': f'Error al mover producto: {str(e)}'}, status=500)
 
 
-
-# resumen de datos 
-
-from django.shortcuts import render
-from .models import Bsf
-
+# Esta funcion muestra un resumen de inventario BSF para control de existencias.
 @login_required
 @require_module_permission('bodegabsf', 'view')
 def resumen_bsf(request):
     datos = Bsf.objects.all().values(
-        "id",
-        "cod_dun",
-        "cod_ean",
-        "cod_sistema",
-        "descripcion",
-        "cajas",
-        "stock_fisico",
-        "ubicacion",
+        'id',
+        'cod_dun',
+        'cod_ean',
+        'cod_sistema',
+        'descripcion',
+        'cajas',
+        'stock_fisico',
+        'ubicacion',
     )
-    return render(request, "resumen_bsf.html", {"datos": list(datos)})
+    return render(request, 'resumen_bsf.html', {'datos': list(datos)})
 
 
+# Esta funcion confirma los valores fisicos del resumen y actualiza cajas si corresponde.
 @login_required
 @require_module_permission('bodegabsf', 'edit')
 @require_POST
@@ -403,13 +388,11 @@ def confirmar_resumen_bsf(request):
         'ok': True,
         'updated': actualizo_bd,
         'cajas': total_fisico,
-        'message': 'Registro confirmado.'
+        'message': 'Registro confirmado.',
     })
 
 
-# views.py
-from django.contrib.auth.decorators import login_required
-
+# Esta funcion crea registros BSF desde un formulario tradicional.
 @login_required
 def crear_bsf(request):
     if request.method == 'POST':
@@ -422,11 +405,7 @@ def crear_bsf(request):
     return render(request, 'bodegabsf/bsf_form.html', {'form': form})
 
 
-# pedidos
-from django.shortcuts import render
-from django.db.models import Sum
-from .models import Bsf
-
+# Esta funcion genera un resumen filtrable de pedidos para la vista operativa.
 @login_required
 @require_module_permission('bodegabsf', 'report')
 def resumen_pedidos(request):
@@ -434,7 +413,6 @@ def resumen_pedidos(request):
     pedido = request.GET.get('pedido')
     ubicacion = request.GET.get('ubicacion')
 
-    # 🔴 BASE: excluir pedidos vacíos o en 0
     queryset = Bsf.objects.exclude(pedido__isnull=True).exclude(pedido=0)
 
     if fecha:
@@ -454,7 +432,7 @@ def resumen_pedidos(request):
             'cod_ean',
             'cod_dun',
             'cod_sistema',
-            'descripcion'
+            'descripcion',
         )
         .annotate(
             total_cant_solicitada=Sum('cant_solicitada')
@@ -462,20 +440,16 @@ def resumen_pedidos(request):
         .order_by(
             'pedido',
             'ubicacion',
-            'descripcion'
+            'descripcion',
         )
     )
 
     return render(request, 'resumen_pedidos.html', {
-        'resumen': resumen
+        'resumen': resumen,
     })
-# excel pedidos
-import openpyxl
-from django.http import HttpResponse
-from django.db.models import Sum
-from .models import Bsf
 
 
+# Esta funcion exporta a Excel el resumen de pedidos filtrado.
 @login_required
 @require_module_permission('bodegabsf', 'export')
 def resumen_pedidos_excel(request):
@@ -483,7 +457,6 @@ def resumen_pedidos_excel(request):
     pedido = request.GET.get('pedido')
     ubicacion = request.GET.get('ubicacion')
 
-    # 🔴 SOLO pedidos válidos
     queryset = Bsf.objects.filter(pedido__gt=0)
 
     if fecha:
@@ -503,7 +476,7 @@ def resumen_pedidos_excel(request):
             'cod_ean',
             'cod_dun',
             'cod_sistema',
-            'descripcion'
+            'descripcion',
         )
         .annotate(
             total_cant_solicitada=Sum('cant_solicitada')
@@ -511,12 +484,9 @@ def resumen_pedidos_excel(request):
         .order_by('pedido', 'ubicacion')
     )
 
-    # =========================
-    # CREAR EXCEL
-    # =========================
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Resumen Pedidos"
+    ws.title = 'Resumen Pedidos'
 
     ws.append([
         'Pedido',
@@ -525,7 +495,7 @@ def resumen_pedidos_excel(request):
         'Cod DUN',
         'Cod Sistema',
         'Descripción',
-        'Total Cant. Solicitada'
+        'Total Cant. Solicitada',
     ])
 
     for r in resumen:
@@ -536,12 +506,9 @@ def resumen_pedidos_excel(request):
             r['cod_dun'],
             r['cod_sistema'],
             r['descripcion'],
-            r['total_cant_solicitada'] or 0
+            r['total_cant_solicitada'] or 0,
         ])
 
-    # =========================
-    # RESPUESTA HTTP (CLAVE)
-    # =========================
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
@@ -549,16 +516,10 @@ def resumen_pedidos_excel(request):
 
     wb.save(response)
 
-    return response  # ✅ ESTO SOLUCIONA EL ERROR
+    return response
 
 
-# solicitudes a facturacion 
-
-from django.shortcuts import render
-from django.db.models import Sum
-from .models import Bsf
-
-
+# Esta funcion muestra el resumen general de pedidos para facturacion.
 @login_required
 @require_module_permission('bodegabsf', 'report')
 def resumen_general_pedidos(request):
@@ -592,7 +553,7 @@ def resumen_general_pedidos(request):
             'cod_ean',
             'cod_dun',
             'cod_sistema',
-            'descripcion'
+            'descripcion',
         )
         .annotate(
             total_cant_solicitada=Sum('cant_solicitada')
@@ -601,17 +562,11 @@ def resumen_general_pedidos(request):
     )
 
     return render(request, 'resumen_general_pedidos.html', {
-        'resumen': resumen
+        'resumen': resumen,
     })
 
 
-# 02 
-import openpyxl
-from django.http import HttpResponse
-from django.db.models import Sum
-from .models import Bsf
-
-
+# Esta funcion exporta a Excel el resumen general de pedidos.
 @login_required
 @require_module_permission('bodegabsf', 'export')
 def resumen_general_pedidos_excel(request):
@@ -645,7 +600,7 @@ def resumen_general_pedidos_excel(request):
             'cod_ean',
             'cod_dun',
             'cod_sistema',
-            'descripcion'
+            'descripcion',
         )
         .annotate(
             total_cant_solicitada=Sum('cant_solicitada')
@@ -655,7 +610,7 @@ def resumen_general_pedidos_excel(request):
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Resumen General Pedidos"
+    ws.title = 'Resumen General Pedidos'
 
     ws.append([
         'Pedido',
@@ -663,7 +618,7 @@ def resumen_general_pedidos_excel(request):
         'Cod DUN',
         'Cod Sistema',
         'Descripción',
-        'Total Cant. Solicitada'
+        'Total Cant. Solicitada',
     ])
 
     for r in resumen:
@@ -673,41 +628,20 @@ def resumen_general_pedidos_excel(request):
             r['cod_dun'],
             r['cod_sistema'],
             r['descripcion'],
-            r['total_cant_solicitada'] or 0
+            r['total_cant_solicitada'] or 0,
         ])
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = (
-        'attachment; filename=resumen_general_pedidos.xlsx'
-    )
+    response['Content-Disposition'] = 'attachment; filename=resumen_general_pedidos.xlsx'
 
     wb.save(response)
     return response
 
 
-
-# importar
-import pandas as pd
-from datetime import date
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.db import transaction
-
-from .models import Bsf
-from .forms import ImportarExcelForm
-
-
-# -----------------------------
-# LIMPIEZA DE DATOS
-# -----------------------------
+# Esta funcion limpia valores para la importacion de Excel conservando tipos validos.
 def limpiar(valor):
-    """
-    - NaN / vacío → None
-    - string vacío → None
-    - 0 → 0
-    """
     if pd.isna(valor):
         return None
     if isinstance(valor, str):
@@ -716,32 +650,26 @@ def limpiar(valor):
     return valor
 
 
+# Esta funcion valida y transforma fechas importadas desde Excel.
 def limpiar_fecha(valor):
-    """
-    Acepta solo fechas válidas
-    Texto como 'SIN INFORMACION' → None
-    """
     if pd.isna(valor):
         return None
 
     if isinstance(valor, pd.Timestamp):
         return valor.date()
 
-    # Texto u otro tipo → None
     return None
 
 
-# -----------------------------
-# IMPORTAR EXCEL
-# -----------------------------
+# Esta funcion importa datos desde Excel y realiza insercion/actualizacion masiva.
 @login_required
 @require_module_permission('bodegabsf', 'create')
 def importar_excel(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = ImportarExcelForm(request.POST, request.FILES)
 
         if form.is_valid():
-            archivo = request.FILES["archivo"]
+            archivo = request.FILES['archivo']
 
             try:
                 df = pd.read_excel(archivo)
@@ -749,39 +677,38 @@ def importar_excel(request):
                 nuevos = []
                 actualizar = []
 
-                # Obtener códigos existentes
-                cods = df["cod_ean"].dropna().unique()
+                cods = df['cod_ean'].dropna().unique()
                 existentes = {
                     obj.cod_ean: obj
                     for obj in Bsf.objects.filter(cod_ean__in=cods)
                 }
 
                 for _, fila in df.iterrows():
-                    cod_ean = limpiar(fila.get("cod_ean"))
+                    cod_ean = limpiar(fila.get('cod_ean'))
                     if not cod_ean:
                         continue
 
                     data = {
-                        "categoria": limpiar(fila.get("categoria")),
-                        "empresa": limpiar(fila.get("empresa")),
-                        "ubicacion": limpiar(fila.get("ubicacion")),
-                        "cod_dun": limpiar(fila.get("cod_dun")),
-                        "cod_sistema": limpiar(fila.get("cod_sistema")),
-                        "descripcion": limpiar(fila.get("descripcion")),
-                        "unidad": limpiar(fila.get("unidad")),
-                        "pack": int(limpiar(fila.get("pack"))) if limpiar(fila.get("pack")) is not None else None,
-                        "factorx": float(limpiar(fila.get("factorx"))) if limpiar(fila.get("factorx")) is not None else None,
-                        "cajas": int(limpiar(fila.get("cajas"))) if limpiar(fila.get("cajas")) is not None else None,
-                        "saldo": int(limpiar(fila.get("saldo"))) if limpiar(fila.get("saldo")) is not None else None,
-                        "stock_fisico": int(limpiar(fila.get("stock_fisico"))) if limpiar(fila.get("stock_fisico")) is not None else None,
-                        "observacion": limpiar(fila.get("observacion")),
-                        "fecha_inv": limpiar_fecha(fila.get("fecha_inv")),
-                        "encargado": limpiar(fila.get("encargado")),
-                        "fecha_venc": limpiar_fecha(fila.get("fecha_venc")),
-                        "fecha_imp": date.today(),
-                        "numero_contenedor": limpiar(fila.get("numero_contenedor")),
-                        "cant_solicitada": int(limpiar(fila.get("cant_solicitada"))) if limpiar(fila.get("cant_solicitada")) is not None else None,
-                        "pedido": int(limpiar(fila.get("pedido"))) if limpiar(fila.get("pedido")) is not None else None,
+                        'categoria': limpiar(fila.get('categoria')),
+                        'empresa': limpiar(fila.get('empresa')),
+                        'ubicacion': limpiar(fila.get('ubicacion')),
+                        'cod_dun': limpiar(fila.get('cod_dun')),
+                        'cod_sistema': limpiar(fila.get('cod_sistema')),
+                        'descripcion': limpiar(fila.get('descripcion')),
+                        'unidad': limpiar(fila.get('unidad')),
+                        'pack': int(limpiar(fila.get('pack'))) if limpiar(fila.get('pack')) is not None else None,
+                        'factorx': float(limpiar(fila.get('factorx'))) if limpiar(fila.get('factorx')) is not None else None,
+                        'cajas': int(limpiar(fila.get('cajas'))) if limpiar(fila.get('cajas')) is not None else None,
+                        'saldo': int(limpiar(fila.get('saldo'))) if limpiar(fila.get('saldo')) is not None else None,
+                        'stock_fisico': int(limpiar(fila.get('stock_fisico'))) if limpiar(fila.get('stock_fisico')) is not None else None,
+                        'observacion': limpiar(fila.get('observacion')),
+                        'fecha_inv': limpiar_fecha(fila.get('fecha_inv')),
+                        'encargado': limpiar(fila.get('encargado')),
+                        'fecha_venc': limpiar_fecha(fila.get('fecha_venc')),
+                        'fecha_imp': date.today(),
+                        'numero_contenedor': limpiar(fila.get('numero_contenedor')),
+                        'cant_solicitada': int(limpiar(fila.get('cant_solicitada'))) if limpiar(fila.get('cant_solicitada')) is not None else None,
+                        'pedido': int(limpiar(fila.get('pedido'))) if limpiar(fila.get('pedido')) is not None else None,
                     }
 
                     if cod_ean in existentes:
@@ -792,7 +719,6 @@ def importar_excel(request):
                     else:
                         nuevos.append(Bsf(cod_ean=cod_ean, **data))
 
-                # Guardado optimizado
                 with transaction.atomic():
                     if nuevos:
                         Bsf.objects.bulk_create(nuevos, batch_size=500)
@@ -800,47 +726,42 @@ def importar_excel(request):
                         Bsf.objects.bulk_update(
                             actualizar,
                             fields=data.keys(),
-                            batch_size=500
+                            batch_size=500,
                         )
 
                 messages.success(
                     request,
-                    f"Importación OK: {len(nuevos)} nuevos / {len(actualizar)} actualizados"
+                    f'Importación OK: {len(nuevos)} nuevos / {len(actualizar)} actualizados',
                 )
-                return redirect("importar_excel")
+                return redirect('importar_excel')
 
             except Exception as e:
-                messages.error(request, f"Error al importar: {e}")
+                messages.error(request, f'Error al importar: {e}')
 
     else:
         form = ImportarExcelForm()
 
-    return render(request, "importar_excel.html", {"form": form})
+    return render(request, 'importar_excel.html', {'form': form})
 
 
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db import transaction
-from django.contrib import messages
-from django.shortcuts import redirect
-
-
+# Esta funcion determina si el usuario es administrador del sistema.
 def es_admin(user):
     return user.is_superuser
 
 
+# Esta funcion elimina todos los registros BSF con acceso restringido a administradores.
 @login_required
 @user_passes_test(es_admin)
 @require_module_permission('bodegabsf', 'delete')
 def borrar_todo_bsf(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         with transaction.atomic():
             total = Bsf.objects.count()
             Bsf.objects.all().delete()
 
         messages.success(
             request,
-            f"Se eliminaron {total} registros correctamente."
+            f'Se eliminaron {total} registros correctamente.',
         )
 
-    return redirect("importar_excel")
-
+    return redirect('importar_excel')

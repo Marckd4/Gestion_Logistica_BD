@@ -17,9 +17,29 @@
             <form method="POST">
                 {% csrf_token %}
 
+                {% if form and form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for err in form.non_field_errors %}
+                            <div>{{ err }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
                 <div class="mb-3">
                     <label class="form-label">Nombre de usuario</label>
-                    <input type="text" name="username" class="form-control" placeholder="Ingrese el usuario" required>
+                    <input type="text" name="username" class="form-control" placeholder="Ingrese el usuario" value="{% if form %}{{ form.username.value|default:'' }}{% endif %}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Correo electronico</label>
+                    <input type="email" name="email" class="form-control" placeholder="Ingrese el correo" value="{% if form %}{{ form.email.value|default:'' }}{% endif %}" required>
+                    {% if form and form.email.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for err in form.email.errors %}
+                                <div>{{ err }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
 
                 <div class="mb-3">

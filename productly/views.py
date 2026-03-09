@@ -152,23 +152,31 @@ def exportar_resumen_excel(request):
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from .forms import CrearUsuarioForm
 
 def crear_usuario(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        form = CrearUsuarioForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, "Debes ingresar un correo electronico valido")
+            return render(request, "crear_usuario.html", {"form": form})
+
+        username = form.cleaned_data["username"]
+        email = form.cleaned_data["email"]
+        password = form.cleaned_data["password"]
 
         if User.objects.filter(username=username).exists():
             messages.error(request, "El usuario ya existe")
             return redirect("crear_usuario")
 
         # Crear usuario con todos los permisos
-        User.objects.create_superuser(username=username, password=password)
+        User.objects.create_superuser(username=username, email=email, password=password)
 
         messages.success(request, "Usuario administrador creado correctamente")
         return redirect("crear_usuario")
 
-    return render(request, "crear_usuario.html")
+    form = CrearUsuarioForm()
+    return render(request, "crear_usuario.html", {"form": form})
 
 # dashboard
 
