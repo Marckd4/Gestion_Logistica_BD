@@ -180,6 +180,36 @@ if not DEBUG:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# ============================================
+# Configuración de Envío de Correos
+# ============================================
+
+# EMAIL_BACKEND determina cómo se envían los correos
+# - Para desarrollo local: use 'django.core.mail.backends.console.EmailBackend' 
+# - Para testing: use 'django.core.mail.backends.locmem.EmailBackend'
+# - Para producción: use 'django.core.mail.backends.smtp.EmailBackend' (default)
+
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend'
+)
+
+# Configuración SMTP para envío de correos en producción
+# Recomendado: Gmail, SendGrid, AWS SES, Brevo (Sendinblue), etc.
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
+
+# Dirección de email desde la que se enviarán los correos
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+# Email para notificaciones del admin
+ADMINS = [('Admin', os.environ.get('ADMIN_EMAIL', 'admin@example.com'))]
+MANAGERS = ADMINS
+
 
 # ============================================
 # Configuraciones de Seguridad de Sesiones
