@@ -225,3 +225,21 @@ def login_usuario(request):
             messages.error(request, "Credenciales inválidas, intenta nuevamente.")
 
     return render(request, "login.html")
+
+
+from django.shortcuts import render
+from utils_excel import rebaje_masivo_excel
+
+
+def subir_excel_rebaje(request):
+
+    if request.method == "POST":
+
+        archivo = request.FILES["archivo"]
+        bodega = request.POST["bodega"]
+
+        rebaje_masivo_excel(archivo, bodega)
+
+        return render(request, "exito.html")
+
+    return render(request, "subir_excel.html")

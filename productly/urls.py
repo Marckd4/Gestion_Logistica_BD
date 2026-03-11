@@ -20,6 +20,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include
 from django.urls import reverse_lazy
 from . import views
+from .views import subir_excel_rebaje
 
 
 urlpatterns = [
@@ -33,6 +34,7 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path('logout/', views.logout_usuario, name='logout'),
     path("login/", views.login_usuario, name="login"),
+    path("rebaje-excel/", subir_excel_rebaje, name="rebaje_excel"),
     path(
         "password-reset/",
         auth_views.PasswordResetView.as_view(

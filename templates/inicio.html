@@ -227,16 +227,98 @@
                 </div>
 
                 <div class="tab-pane fade" id="panel-lingues" role="tabpanel">
-                    <h4 class="module-title">Bodega Lingues</h4>
-                    <div class="row g-4">
-                        <div class="col-md-6 col-xl-4"><a href="{% url 'index' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-box-seam erp-icon"></i><span>Inventario</span></div><div class="erp-description">Consulta el inventario completo de bodega central.</div></div></a></div>
-                        <div class="col-md-6 col-xl-4"><a href="{% url 'formulariocentral' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-arrow-down-circle erp-icon"></i><span>Ingreso</span></div><div class="erp-description">Registrar ingresos de productos a bodega central.</div></div></a></div>
-                        <div class="col-md-6 col-xl-4"><a href="{% url 'cambio_ubicacion_central' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-arrow-left-right erp-icon"></i><span>Cambio de Ubicación Bodega Central</span></div><div class="erp-description">Mover productos entre ubicaciones internas.</div></div></a></div>
-                        <div class="col-md-6 col-xl-4"><a href="{% url 'exportar_excel_productos' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-file-earmark-excel erp-icon"></i><span>Exportar Excel</span></div><div class="erp-description">Descargar inventario de central en formato Excel.</div></div></a></div>
-                        <div class="col-md-6 col-xl-4"><a href="{% url 'resumen_central' %}" class="text-decoration-none"><div class="card card-erp primary h-100"><div class="erp-header"><i class="bi bi-table erp-icon"></i><span>Toma de Inventario</span></div><div class="erp-description">Control y confirmación de conteo físico.</div></div></a></div>
-                    </div>
-                </div>
+                        <h4 class="module-title">Bodega Lingues</h4>
 
+                        <div class="row g-4">
+
+                            <div class="col-md-6 col-xl-4">
+                                <a href="{% url 'index' %}" class="text-decoration-none">
+                                    <div class="card card-erp primary h-100">
+                                        <div class="erp-header">
+                                            <i class="bi bi-box-seam erp-icon"></i>
+                                            <span>Inventario</span>
+                                        </div>
+                                        <div class="erp-description">
+                                            Consulta el inventario completo de bodega central.
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-6 col-xl-4">
+                                <a href="{% url 'formulariocentral' %}" class="text-decoration-none">
+                                    <div class="card card-erp primary h-100">
+                                        <div class="erp-header">
+                                            <i class="bi bi-arrow-down-circle erp-icon"></i>
+                                            <span>Ingreso</span>
+                                        </div>
+                                        <div class="erp-description">
+                                            Registrar ingresos de productos a bodega central.
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-6 col-xl-4">
+                                <a href="{% url 'cambio_ubicacion_central' %}" class="text-decoration-none">
+                                    <div class="card card-erp primary h-100">
+                                        <div class="erp-header">
+                                            <i class="bi bi-arrow-left-right erp-icon"></i>
+                                            <span>Cambio de Ubicación</span>
+                                        </div>
+                                        <div class="erp-description">
+                                            Mover productos entre ubicaciones internas.
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-6 col-xl-4">
+                                <a href="{% url 'exportar_excel_productos' %}" class="text-decoration-none">
+                                    <div class="card card-erp primary h-100">
+                                        <div class="erp-header">
+                                            <i class="bi bi-file-earmark-excel erp-icon"></i>
+                                            <span>Exportar Excel</span>
+                                        </div>
+                                        <div class="erp-description">
+                                            Descargar inventario de central en formato Excel.
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-6 col-xl-4">
+                                <a href="{% url 'resumen_central' %}" class="text-decoration-none">
+                                    <div class="card card-erp primary h-100">
+                                        <div class="erp-header">
+                                            <i class="bi bi-table erp-icon"></i>
+                                            <span>Toma de Inventario</span>
+                                        </div>
+                                        <div class="erp-description">
+                                            Control y confirmación de conteo físico.
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <!-- NUEVO MODULO REBAJE -->
+
+                            <div class="col-md-6 col-xl-4">
+                                <a href="{% url 'rebaje_excel' %}" class="text-decoration-none">
+                                    <div class="card card-erp primary h-100">
+                                        <div class="erp-header">
+                                            <i class="bi bi-file-earmark-arrow-down erp-icon"></i>
+                                            <span>Rebaje Masivo</span>
+                                        </div>
+                                        <div class="erp-description">
+                                            Rebajar stock de productos mediante carga de archivo Excel.
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
                 <div class="tab-pane fade" id="panel-bsf" role="tabpanel">
                     <h4 class="module-title">Bodega BSF</h4>
                     <div class="row g-4">
